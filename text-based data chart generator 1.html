@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Data Chart Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 30px;
+            align-items: start;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            min-height: 600px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-icon {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            min-height: 120px;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .primary-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            flex: 1;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .secondary-btn {
+            background: #f8f9fa;
+            color: #333;
+            border: 2px solid #e0e0e0;
+            flex: 1;
+        }
+
+        .secondary-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+
+        .export-btn {
+            background: #28a745;
+            color: white;
+            flex: 1;
+        }
+
+        .export-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .color-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+
+        .color-option.selected {
+            border-color: #333;
+            transform: scale(1.1);
+        }
+
+        .sample-data-btn {
+            background: #17a2b8;
+            color: white;
+            font-size: 12px;
+            padding: 8px 12px;
+            margin-bottom: 10px;
+        }
+
+        .sample-data-btn:hover {
+            background: #138496;
+        }
+
+        .chart-canvas {
+            max-width: 100%;
+            height: auto !important;
+        }
+
+        .data-preview {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .stats-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .animation-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+            background: #ccc;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #667eea;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 21px;
+            height: 21px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(25px);
+        }
+
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #c3e6cb;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .control-panel {
+                position: relative;
+                top: 0;
+            }
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Professional Data Chart Generator</h1>
+            <p>Transform your data into beautiful, interactive charts with advanced customization options</p>
+        </div>
+
+        <div class="main-content">
+            <div class="control-panel">
+                <!-- Data Input Section -->
+                <div class="section">
+                    <h3><span class="section-icon">📊</span>Data Input</h3>
+                    <button class="sample-data-btn" onclick="loadSampleData()">Load Sample Data</button>
+                    <textarea id="dataInput" placeholder="Paste your CSV/TSV data here...
+Example:
+Month,Sales,Expenses
+Jan,4000,3000
+Feb,5000,3500
+Mar,6000,4000"></textarea>
+                    <div class="button-group">
+                        <button class="secondary-btn" onclick="parseData()">Parse Data</button>
+                        <button class="secondary-btn" onclick="clearData()">Clear</button>
+                    </div>
+                    <div id="dataPreview" class="data-preview" style="display: none;"></div>
+                    <div id="dataStats" class="stats-display" style="display: none;"></div>
+                </div>
+
+                <!-- Chart Configuration -->
+                <div class="section">
+                    <h3><span class="section-icon">⚙️</span>Chart Settings</h3>
+                    <select id="chartType">
+                        <option value="line">Line Chart</option>
+                        <option value="bar">Bar Chart</option>
+                        <option value="horizontalBar">Horizontal Bar</option>
+                        <option value="pie">Pie Chart</option>
+                        <option value="doughnut">Doughnut Chart</option>
+                        <option value="radar">Radar Chart</option>
+                        <option value="polarArea">Polar Area</option>
+                        <option value="scatter">Scatter Plot</option>
+                    </select>
+                    
+                    <input type="text" id="chartTitle" placeholder="Chart Title" value="My Data Chart">
+                    <input type="text" id="xAxisLabel" placeholder="X-Axis Label" value="Categories">
+                    <input type="text" id="yAxisLabel" placeholder="Y-Axis Label" value="Values">
+                </div>
+
+                <!-- Styling Options -->
+                <div class="section">
+                    <h3><span class="section-icon">🎨</span>Styling</h3>
+                    <label>Color Scheme:</label>
+                    <select id="colorScheme">
+                        <option value="default">Professional Blue</option>
+                        <option value="vibrant">Vibrant Rainbow</option>
+                        <option value="pastel">Soft Pastels</option>
+                        <option value="dark">Dark Theme</option>
+                        <option value="corporate">Corporate</option>
+                        <option value="nature">Nature</option>
+                    </select>
+                    
+                    <label style="margin-top: 15px; display: block;">Background:</label>
+                    <select id="backgroundType">
+                        <option value="transparent">Transparent</option>
+                        <option value="white">White</option>
+                        <option value="gradient">Gradient</option>
+                        <option value="pattern">Pattern</option>
+                    </select>
+                </div>
+
+                <!-- Animation Controls -->
+                <div class="section">
+                    <h3><span class="section-icon">⚡</span>Animation</h3>
+                    <div class="animation-controls">
+                        <span>Enable Animations:</span>
+                        <div class="toggle-switch" id="animationToggle" onclick="toggleAnimation()">
+                            <div class="toggle-slider"></div>
+                        </div>
+                    </div>
+                    <select id="animationType" style="margin-top: 10px;">
+                        <option value="easeOutQuart">Smooth (Recommended)</option>
+                        <option value="easeInOutBounce">Bouncy</option>
+                        <option value="easeOutElastic">Elastic</option>
+                        <option value="linear">Linear</option>
+                    </select>
+                </div>
+
+                <!-- Actions -->
+                <div class="section">
+                    <h3><span class="section-icon">🚀</span>Actions</h3>
+                    <div class="button-group">
+                        <button class="primary-btn" onclick="generateChart()">Generate Chart</button>
+                    </div>
+                    <div class="button-group" style="margin-top: 10px;">
+                        <button class="export-btn" onclick="exportSVG()">Export SVG</button>
+                        <button class="export-btn" onclick="exportPNG()">Export PNG</button>
+                    </div>
+                    <div class="button-group" style="margin-top: 10px;">
+                        <button class="secondary-btn" onclick="generateEmbed()">Get Embed Code</button>
+                    </div>
+                </div>
+
+                <div id="messageArea"></div>
+            </div>
+
+            <div class="chart-container">
+                <div id="chartArea">
+                    <canvas id="myChart" class="chart-canvas"></canvas>
+                </div>
+                <div id="embedCode" style="display: none; margin-top: 20px;">
+                    <h4>Embed Code:</h4>
+                    <textarea readonly style="height: 100px; font-size: 12px; background: #f8f9fa;"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentChart = null;
+        let parsedData = null;
+        let animationsEnabled = true;
+
+        // Color schemes
+        const colorSchemes = {
+            default: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'],
+            vibrant: ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dda0dd'],
+            pastel: ['#ffb3ba', '#ffdfba', '#ffffba', '#baffc9', '#bae1ff', '#e1baff'],
+            dark: ['#2c3e50', '#34495e', '#7f8c8d', '#95a5a6', '#bdc3c7', '#ecf0f1'],
+            corporate: ['#1f4e79', '#2e86c1', '#5dade2', '#85c1e9', '#aed6f1', '#d6eaf8'],
+            nature: ['#27ae60', '#2ecc71', '#58d68d', '#82e0aa', '#a9dfbf', '#d5f4e6']
+        };
+
+        // Sample datasets
+        const sampleDatasets = [
+            `Month,Sales,Marketing,Development
+Jan,4000,2000,3000
+Feb,5000,2500,3500
+Mar,6000,3000,4000
+Apr,5500,2800,3800
+May,7000,3500,4500
+Jun,8000,4000,5000`,
+            `Quarter,Revenue,Profit,Expenses
+Q1 2023,150000,45000,105000
+Q2 2023,180000,60000,120000
+Q3 2023,200000,75000,125000
+Q4 2023,220000,85000,135000`,
+            `Product,Units Sold,Price,Customer Rating
+Laptop,120,999,4.5
+Phone,350,699,4.7
+Tablet,80,399,4.2
+Watch,200,299,4.4
+Headphones,450,199,4.6`
+        ];
+
+        function loadSampleData() {
+            const randomSample = sampleDatasets[Math.floor(Math.random() * sampleDatasets.length)];
+            document.getElementById('dataInput').value = randomSample;
+            parseData();
+            showMessage('Sample data loaded successfully!', 'success');
+        }
+
+        function parseData() {
+            const input = document.getElementById('dataInput').value.trim();
+            if (!input) {
+                showMessage('Please enter some data first.', 'error');
+                return;
+            }
+
+            try {
+                // Detect delimiter
+                const delimiter = input.includes('\t') ? '\t' : ',';
+                
+                const results = Papa.parse(input, {
+                    header: true,
+                    delimiter: delimiter,
+                    skipEmptyLines: true,
+                    dynamicTyping: true,
+                    transformHeader: header => header.trim()
+                });
+
+                if (results.errors.length > 0) {
+                    showMessage('Parsing errors: ' + results.errors.map(e => e.message).join(', '), 'error');
+                    return;
+                }
+
+                parsedData = results.data;
+                displayDataPreview();
+                showDataStats();
+                showMessage(`Successfully parsed ${parsedData.length} rows of data.`, 'success');
+                
+            } catch (error) {
+                showMessage('Error parsing data: ' + error.message, 'error');
+            }
+        }
+
+        function displayDataPreview() {
+            const preview = document.getElementById('dataPreview');
+            const maxRows = 5;
+            const previewData = parsedData.slice(0, maxRows);
+            
+            let html = '<strong>Data Preview:</strong><br>';
+            html += '<table style="width: 100%; font-size: 11px;">';
+            
+            // Headers
+            if (previewData.length > 0) {
+                html += '<tr>';
+                Object.keys(previewData[0]).forEach(key => {
+                    html += `<th style="padding: 4px; background: #e9ecef;">${key}</th>`;
+                });
+                html += '</tr>';
+                
+                // Data rows
+                previewData.forEach(row => {
+                    html += '<tr>';
+                    Object.values(row).forEach(value => {
+                        html += `<td style="padding: 4px; border-bottom: 1px solid #dee2e6;">${value}</td>`;
+                    });
+                    html += '</tr>';
+                });
+            }
+            
+            html += '</table>';
+            if (parsedData.length > maxRows) {
+                html += `<div style="margin-top: 8px; color: #666;">...and ${parsedData.length - maxRows} more rows</div>`;
+            }
+            
+            preview.innerHTML = html;
+            preview.style.display = 'block';
+        }
+
+        function showDataStats() {
+            const stats = document.getElementById('dataStats');
+            const numericColumns = [];
+            
+            if (parsedData.length > 0) {
+                Object.keys(parsedData[0]).forEach(key => {
+                    const values = parsedData.map(row => row[key]).filter(val => typeof val === 'number');
+                    if (values.length > 0) {
+                        numericColumns.push({
+                            name: key,
+                            count: values.length,
+                            sum: values.reduce((a, b) => a + b, 0),
+                            avg: values.reduce((a, b) => a + b, 0) / values.length,
+                            min: Math.min(...values),
+                            max: Math.max(...values)
+                        });
+                    }
+                });
+            }
+
+            let html = '';
+            html += `<div class="stat-card"><div class="stat-value">${parsedData.length}</div><div class="stat-label">Total Rows</div></div>`;
+            html += `<div class="stat-card"><div class="stat-value">${numericColumns.length}</div><div class="stat-label">Numeric Columns</div></div>`;
+            
+            stats.innerHTML = html;
+            stats.style.display = 'grid';
+        }
+
+        function generateChart() {
+            if (!parsedData || parsedData.length === 0) {
+                showMessage('Please parse your data first.', 'error');
+                return;
+            }
+
+            const chartType = document.getElementById('chartType').value;
+            const title = document.getElementById('chartTitle').value;
+            const xLabel = document.getElementById('xAxisLabel').value;
+            const yLabel = document.getElementById('yAxisLabel').value;
+            const colorScheme = document.getElementById('colorScheme').value;
+            const backgroundType = document.getElementById('backgroundType').value;
+            const animationType = document.getElementById('animationType').value;
+
+            try {
+                const ctx = document.getElementById('myChart').getContext('2d');
+                
+                if (currentChart) {
+                    currentChart.destroy();
+                }
+
+                const chartData = prepareChartData(parsedData, chartType);
+                const colors = colorSchemes[colorScheme];
+                
+                const config = {
+                    type: chartType === 'horizontalBar' ? 'bar' : chartType,
+                    data: {
+                        labels: chartData.labels,
+                        datasets: chartData.datasets.map((dataset, index) => ({
+                            ...dataset,
+                            backgroundColor: chartType === 'pie' || chartType === 'doughnut' || chartType === 'polarArea' 
+                                ? colors 
+                                : colors[index % colors.length] + '80',
+                            borderColor: colors[index % colors.length],
+                            borderWidth: 2,
+                            fill: chartType === 'line' ? false : true,
+                            tension: chartType === 'line' ? 0.4 : 0
+                        }))
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: chartType === 'horizontalBar' ? 'y' : 'x',
+                        plugins: {
+                            title: {
+                                display: !!title,
+                                text: title,
+                                font: { size: 18, weight: 'bold' }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(0,0,0,0.8)',
+                                titleColor: 'white',
+                                bodyColor: 'white',
+                                borderColor: colors[0],
+                                borderWidth: 1
+                            }
+                        },
+                        scales: chartType === 'pie' || chartType === 'doughnut' || chartType === 'radar' || chartType === 'polarArea' ? {} : {
+                            x: {
+                                display: true,
+                                title: {
+                                    display: !!xLabel,
+                                    text: xLabel,
+                                    font: { size: 14, weight: 'bold' }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            },
+                            y: {
+                                display: true,
+                                title: {
+                                    display: !!yLabel,
+                                    text: yLabel,
+                                    font: { size: 14, weight: 'bold' }
+                                },
+                                grid: {
+                                    display: true,
+                                    color: 'rgba(0,0,0,0.1)'
+                                }
+                            }
+                        },
+                        animation: animationsEnabled ? {
+                            duration: 1500,
+                            easing: animationType
+                        } : false,
+                        interaction: {
+                            mode: 'nearest',
+                            axis: 'x',
+                            intersect: false
+                        }
+                    }
+                };
+
+                // Apply background
+                if (backgroundType !== 'transparent') {
+                    config.options.plugins.background = {
+                        color: backgroundType === 'white' ? '#ffffff' : 
+                               backgroundType === 'gradient' ? 'linear-gradient(45deg, #f093fb 0%, #f5576c 100%)' : 
+                               'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAGklEQVQYV2M4gwH+YwCGIasIUwhT25BVBADtzYNYrHvv4gAAAABJRU5ErkJggg==)'
+                    };
+                }
+
+                currentChart = new Chart(ctx, config);
+                showMessage('Chart generated successfully!', 'success');
+
+            } catch (error) {
+                showMessage('Error generating chart: ' + error.message, 'error');
+            }
+        }
+
+        function prepareChartData(data, chartType) {
+            const firstRow = data[0];
+            const keys = Object.keys(firstRow);
+            
+            // Find the first non-numeric column for labels
+            let labelColumn = keys[0];
+            const numericColumns = [];
+            
+            keys.forEach(key => {
+                const values = data.map(row => row[key]);
+                if (values.every(val => typeof val === 'number' || !isNaN(Number(val)))) {
+                    numericColumns.push(key);
+                } else if (labelColumn === keys[0]) {
+                    labelColumn = key;
+                }
+            });
+
+            const labels = data.map(row => row[labelColumn]);
+            
+            const datasets = numericColumns.map(column => ({
+                label: column,
+                data: data.map(row => Number(row[column]) || 0)
+            }));
+
+            return { labels, datasets };
+        }
+
+        function exportSVG() {
+            if (!currentChart) {
+                showMessage('Please generate a chart first.', 'error');
+                return;
+            }
+
+            try {
+                const canvas = document.getElementById('myChart');
+                const svgString = `
+                    <svg xmlns="http://www.w3.org/2000/svg" width="${canvas.width}" height="${canvas.height}">
+                        <foreignObject width="100%" height="100%">
+                            <div xmlns="http://www.w3.org/1999/xhtml">
+                                <img src="${canvas.toDataURL()}" width="${canvas.width}" height="${canvas.height}"/>
+                            </div>
+                        </foreignObject>
+                    </svg>
+                `;
+                
+                const blob = new Blob([svgString], { type: 'image/svg+xml' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'chart.svg';
+                link.click();
+                URL.revokeObjectURL(url);
+                
+                showMessage('SVG exported successfully!', 'success');
+            } catch (error) {
+                showMessage('Error exporting SVG: ' + error.message, 'error');
+            }
+        }
+
+        function exportPNG() {
+            if (!currentChart) {
+                showMessage('Please generate a chart first.', 'error');
+                return;
+            }
+
+            try {
+                const canvas = document.getElementById('myChart');
+                const link = document.createElement('a');
+                link.href = canvas.toDataURL('image/png');
+                link.download = 'chart.png';
+                link.click();
+                
+                showMessage('PNG exported successfully!', 'success');
+            } catch (error) {
+                showMessage('Error exporting PNG: ' + error.message, 'error');
+            }
+        }
+
+        function generateEmbed() {
+            if (!currentChart) {
+                showMessage('Please generate a chart first.', 'error');
+                return;
+            }
+
+            const canvas = document.getElementById('myChart');
+            const dataURL = canvas.toDataURL();
+            
+            const embedCode = `<iframe src="data:text/html;charset=utf-8,
+                <html>
+                    <body style='margin:0;padding:20px;font-family:Arial,sans-serif;background:#f8f9fa;'>
+                        <div style='text-align:center;'>
+                            <img src='${dataURL}' style='max-width:100%;height:auto;border-radius:8px;box-shadow:0 4px 8px rgba(0,0,0,0.1);'/>
+                            <p style='margin-top:15px;color:#666;font-size:12px;'>Generated with Professional Data Chart Generator</p>
+                        </div>
+                    </body>
+                </html>" 
+                width="100%" height="400" frameborder="0"></iframe>`;
+
+            const embedArea = document.getElementById('embedCode');
+            embedArea.querySelector('textarea').value = embedCode;
+            embedArea.style.display = 'block';
+            
+            showMessage('Embed code generated!', 'success');
+        }
+
+        function toggleAnimation() {
+            animationsEnabled = !animationsEnabled;
+            const toggle = document.getElementById('animationToggle');
+            toggle.classList.toggle('active');
+        }
+
+        function clearData() {
+            document.getElementById('dataInput').value = '';
+            document.getElementById('dataPreview').style.display = 'none';
+            document.getElementById('dataStats').style.display = 'none';
+            document.getElementById('embedCode').style.display = 'none';
+            parsedData = null;
+            
+            if (currentChart) {
+                currentChart.destroy();
+                currentChart = null;
+            }
+            
+            // Clear the canvas
+            const canvas = document.getElementById('myChart');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            showMessage('Data cleared successfully!', 'success');
+        }
+
+        function showMessage(message, type) {
+            const messageArea = document.getElementById('messageArea');
+            const messageClass = type === 'error' ? 'error-message' : 'success-message';
+            
+            messageArea.innerHTML = `<div class="${messageClass}">${message}</div>`;
+            
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        // Advanced features
+        function downloadTemplate() {
+            const template = `Name,Value1,Value2,Value3
+Product A,100,150,200
+Product B,120,180,220
+Product C,90,140,180
+Product D,110,160,210`;
+
+            const blob = new Blob([template], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'data_template.csv';
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Data validation and cleanup
+        function validateData(data) {
+            if (!data || data.length === 0) {
+                throw new Error('No data provided');
+            }
+
+            const firstRow = data[0];
+            const keys = Object.keys(firstRow);
+            
+            if (keys.length < 2) {
+                throw new Error('Data must have at least 2 columns');
+            }
+
+            // Check for missing values and provide warnings
+            let missingCount = 0;
+            data.forEach((row, index) => {
+                keys.forEach(key => {
+                    if (row[key] === null || row[key] === undefined || row[key] === '') {
+                        missingCount++;
+                    }
+                });
+            });
+
+            if (missingCount > 0) {
+                console.warn(`Found ${missingCount} missing values in dataset`);
+            }
+
+            return true;
+        }
+
+        // Real-time data updates (simulation)
+        function enableRealTimeMode() {
+            if (!currentChart) {
+                showMessage('Please generate a chart first to enable real-time mode.', 'error');
+                return;
+            }
+
+            let updateInterval = setInterval(() => {
+                if (!currentChart) {
+                    clearInterval(updateInterval);
+                    return;
+                }
+
+                // Simulate data updates
+                currentChart.data.datasets.forEach(dataset => {
+                    dataset.data = dataset.data.map(value => {
+                        const variation = (Math.random() - 0.5) * 0.1;
+                        return Math.max(0, value * (1 + variation));
+                    });
+                });
+
+                currentChart.update('none'); // Update without animation for real-time feel
+            }, 2000);
+
+            showMessage('Real-time mode enabled! Data will update every 2 seconds.', 'success');
+            
+            // Stop after 30 seconds for demo
+            setTimeout(() => {
+                clearInterval(updateInterval);
+                showMessage('Real-time mode demo completed.', 'success');
+            }, 30000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'Enter':
+                        e.preventDefault();
+                        generateChart();
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        if (currentChart) exportPNG();
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        clearData();
+                        break;
+                    case 'l':
+                        e.preventDefault();
+                        loadSampleData();
+                        break;
+                }
+            }
+        });
+
+        // Auto-save functionality (in memory)
+        let autoSaveData = {};
+        
+        function autoSave() {
+            const formData = {
+                dataInput: document.getElementById('dataInput').value,
+                chartType: document.getElementById('chartType').value,
+                chartTitle: document.getElementById('chartTitle').value,
+                xAxisLabel: document.getElementById('xAxisLabel').value,
+                yAxisLabel: document.getElementById('yAxisLabel').value,
+                colorScheme: document.getElementById('colorScheme').value,
+                backgroundType: document.getElementById('backgroundType').value,
+                animationType: document.getElementById('animationType').value,
+                animationsEnabled: animationsEnabled
+            };
+            
+            autoSaveData = formData;
+        }
+
+        function restoreAutoSave() {
+            if (Object.keys(autoSaveData).length > 0) {
+                document.getElementById('dataInput').value = autoSaveData.dataInput || '';
+                document.getElementById('chartType').value = autoSaveData.chartType || 'line';
+                document.getElementById('chartTitle').value = autoSaveData.chartTitle || 'My Data Chart';
+                document.getElementById('xAxisLabel').value = autoSaveData.xAxisLabel || 'Categories';
+                document.getElementById('yAxisLabel').value = autoSaveData.yAxisLabel || 'Values';
+                document.getElementById('colorScheme').value = autoSaveData.colorScheme || 'default';
+                document.getElementById('backgroundType').value = autoSaveData.backgroundType || 'transparent';
+                document.getElementById('animationType').value = autoSaveData.animationType || 'easeOutQuart';
+                
+                if (autoSaveData.animationsEnabled !== undefined) {
+                    animationsEnabled = autoSaveData.animationsEnabled;
+                    const toggle = document.getElementById('animationToggle');
+                    if (animationsEnabled) {
+                        toggle.classList.add('active');
+                    }
+                }
+                
+                showMessage('Previous session restored!', 'success');
+            }
+        }
+
+        // Auto-save every 30 seconds
+        setInterval(autoSave, 30000);
+
+        // Chart comparison feature
+        let savedCharts = [];
+
+        function saveCurrentChart() {
+            if (!currentChart) {
+                showMessage('No chart to save!', 'error');
+                return;
+            }
+
+            const chartSnapshot = {
+                id: Date.now(),
+                title: document.getElementById('chartTitle').value || 'Untitled Chart',
+                type: document.getElementById('chartType').value,
+                dataURL: document.getElementById('myChart').toDataURL(),
+                timestamp: new Date().toLocaleString()
+            };
+
+            savedCharts.push(chartSnapshot);
+            showMessage(`Chart "${chartSnapshot.title}" saved!`, 'success');
+        }
+
+        // Data export in multiple formats
+        function exportData(format) {
+            if (!parsedData) {
+                showMessage('No data to export!', 'error');
+                return;
+            }
+
+            let content, mimeType, filename;
+
+            switch(format) {
+                case 'csv':
+                    content = Papa.unparse(parsedData);
+                    mimeType = 'text/csv';
+                    filename = 'data.csv';
+                    break;
+                case 'json':
+                    content = JSON.stringify(parsedData, null, 2);
+                    mimeType = 'application/json';
+                    filename = 'data.json';
+                    break;
+                case 'tsv':
+                    content = Papa.unparse(parsedData, { delimiter: '\t' });
+                    mimeType = 'text/tab-separated-values';
+                    filename = 'data.tsv';
+                    break;
+                default:
+                    showMessage('Unsupported format!', 'error');
+                    return;
+            }
+
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            link.click();
+            URL.revokeObjectURL(url);
+
+            showMessage(`Data exported as ${format.toUpperCase()}!`, 'success');
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default animation state
+            const toggle = document.getElementById('animationToggle');
+            toggle.classList.add('active');
+            
+            // Add tooltip functionality
+            const elements = document.querySelectorAll('[title]');
+            elements.forEach(el => {
+                el.addEventListener('mouseenter', function() {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.textContent = this.getAttribute('title');
+                    tooltip.style.cssText = `
+                        position: absolute;
+                        background: #333;
+                        color: white;
+                        padding: 5px 10px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        z-index: 1000;
+                        pointer-events: none;
+                    `;
+                    document.body.appendChild(tooltip);
+                    
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.left = rect.left + 'px';
+                    tooltip.style.top = (rect.bottom + 5) + 'px';
+                });
+                
+                el.addEventListener('mouseleave', function() {
+                    const tooltip = document.querySelector('.tooltip');
+                    if (tooltip) tooltip.remove();
+                });
+            });
+
+            // Try to restore auto-saved data
+            restoreAutoSave();
+            
+            // Show welcome message
+            showMessage('Welcome to Professional Data Chart Generator! Use Ctrl+L to load sample data, Ctrl+Enter to generate chart.', 'success');
+        });
+
+        // Advanced chart customization
+        function applyCustomStyling() {
+            if (!currentChart) return;
+
+            const customizations = {
+                borderRadius: 8,
+                borderSkipped: false,
+                backgroundColor: function(context) {
+                    const gradient = context.chart.ctx.createLinearGradient(0, 0, 0, 400);
+                    gradient.addColorStop(0, 'rgba(102, 126, 234, 0.8)');
+                    gradient.addColorStop(1, 'rgba(118, 75, 162, 0.1)');
+                    return gradient;
+                }
+            };
+
+            currentChart.data.datasets.forEach(dataset => {
+                Object.assign(dataset, customizations);
+            });
+
+            currentChart.update();
+        }
+
+        // Performance monitoring
+        let performanceMetrics = {
+            parseTime: 0,
+            renderTime: 0,
+            chartGenerated: 0
+        };
+
+        function trackPerformance(operation, startTime) {
+            const endTime = performance.now();
+            const duration = endTime - startTime;
+            
+            switch(operation) {
+                case 'parse':
+                    performanceMetrics.parseTime = duration;
+                    break;
+                case 'render':
+                    performanceMetrics.renderTime = duration;
+                    performanceMetrics.chartGenerated++;
+                    break;
+            }
+            
+            console.log(`${operation} completed in ${duration.toFixed(2)}ms`);
+        }
+
+        // Error recovery and user guidance
+        function provideSuggestions(error) {
+            const suggestions = {
+                'parsing': [
+                    'Check if your data has proper headers',
+                    'Ensure consistent delimiter usage (comma or tab)',
+                    'Remove any special characters from headers',
+                    'Make sure each row has the same number of columns'
+                ],
+                'rendering': [
+                    'Try a different chart type',
+                    'Check if you have numeric data for the selected chart',
+                    'Reduce the dataset size if it\'s very large',
+                    'Ensure data values are valid numbers'
+                ],
+                'export': [
+                    'Make sure a chart is generated first',
+                    'Check browser permissions for downloads',
+                    'Try a different export format'
+                ]
+            };
+
+            return suggestions;
+        }
+    </script>
+</body>
+</html>
