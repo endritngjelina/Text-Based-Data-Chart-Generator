@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataViz Pro - Advanced Chart Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DataViz Pro</h1>
+            <p>Professional-grade data visualization tool with advanced charting capabilities and export options</p>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel control-panel">
+                <h2 class="section-title">📊 Data Input & Configuration</h2>
+                
+                <div class="form-group enhanced">
+                    <label for="dataInput" class="required">Data Input (CSV/TSV/Text)</label>
+                    <textarea id="dataInput" class="data-input" placeholder="Paste your CSV/TSV data here or upload a file...&#10;&#10;Example:&#10;Month,Sales,Profit&#10;Jan,1000,200&#10;Feb,1200,250&#10;Mar,900,180"></textarea>
+                    <div class="tooltip">
+                        <i class="fas fa-info-circle"></i>
+                        <span class="tooltiptext">Supports CSV, TSV, and plain text data. First row should be headers.</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="file-input-wrapper">
+                        <input type="file" id="fileInput" class="file-input" accept=".csv,.tsv,.txt">
+                        <label for="fileInput" class="file-input-label">
+                            <i class="fas fa-cloud-upload-alt"></i> Upload CSV/TSV File
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="required">Chart Configuration</label>
+                    <div class="select-group">
+                        <div class="select-wrapper">
+                            <select id="chartType">
+                                <option value="line">📈 Line Chart</option>
+                                <option value="bar">📊 Bar Chart</option>
+                                <option value="pie">🥧 Pie Chart</option>
+                                <option value="doughnut">🍩 Doughnut Chart</option>
+                                <option value="radar">🎯 Radar Chart</option>
+                                <option value="polarArea">🔵 Polar Area</option>
+                                <option value="scatter">📍 Scatter Plot</option>
+                                <option value="bubble">🫧 Bubble Chart</option>
+                            </select>
+                        </div>
+                        <div class="select-wrapper">
+                            <select id="delimiter">
+                                <option value=",">Comma ( , )</option>
+                                <option value="\t">Tab ( \t )</option>
+                                <option value=";">Semicolon ( ; )</option>
+                                <option value="|">Pipe ( | )</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Color Scheme</label>
+                    <div class="color-picker-group">
+                        <div class="color-input-wrapper">
+                            <input type="color" id="primaryColor" class="color-input" value="#667eea">
+                            <label>Primary</label>
+                        </div>
+                        <div class="color-input-wrapper">
+                            <input type="color" id="secondaryColor" class="color-input" value="#764ba2">
+                            <label>Secondary</label>
+                        </div>
+                        <div class="color-input-wrapper">
+                            <input type="color" id="accentColor" class="color-input" value="#f093fb">
+                            <label>Accent</label>
+                        </div>
+                        <div class="color-input-wrapper">
+                            <input type="color" id="bgColor" class="color-input" value="#ffffff">
+                            <label>Background</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="advanced-options">
+                    <h3><i class="fas fa-cog"></i> Advanced Options</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="showGrid" checked>
+                            <label for="showGrid">Show Grid Lines</label>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="showLegend" checked>
+                            <label for="showLegend">Show Legend</label>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="animateChart" checked>
+                            <label for="animateChart">Animate Chart</label>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="responsive" checked>
+                            <label for="responsive">Responsive Design</label>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="showValues">
+                            <label for="showValues">Show Data Values</label>
+                        </div>
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="darkMode">
+                            <label for="darkMode">Dark Mode</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="generateChart" class="btn btn-primary">
+                        <i class="fas fa-rocket"></i> Generate Chart
+                    </button>
+                    <button id="clearData" class="btn btn-secondary">
+                        <i class="fas fa-trash"></i> Clear All
+                    </button>
+                    <button id="sampleData" class="btn btn-outline">
+                        <i class="fas fa-flask"></i> Sample Data
+                    </button>
+                </div>
+
+                <div id="errorMessage" class="message error-message">
+                    <i class="fas fa-exclamation-circle"></i> <span id="errorText"></span>
+                </div>
+                <div id="successMessage" class="message success-message">
+                    <i class="fas fa-check-circle"></i> <span id="successText"></span>
+                </div>
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your data...</p>
+                    <div class="progress-bar">
+                        <div id="progressFill" class="progress-bar-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel chart-panel">
+                <div class="chart-controls">
+                    <h2 class="section-title">📈 Chart Visualization</h2>
+                    <div class="btn-group">
+                        <button id="exportSVG" class="btn btn-icon btn-success">
+                            <i class="fas fa-file-image"></i>
+                        </button>
+                        <button id="exportPNG" class="btn btn-icon btn-success">
+                            <i class="fas fa-download"></i>
+                        </button>
+                        <button id="generateEmbed" class="btn btn-icon btn-secondary">
+                            <i class="fas fa-code"></i>
+                        </button>
+                        <button id="downloadData" class="btn btn-icon btn-secondary">
+                            <i class="fas fa-file-csv"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="chart-container">
+                    <div id="chartPlaceholder" class="chart-placeholder">
+                        <div>
+                            <h3><i class="fas fa-chart-line"></i> Your Chart Will Appear Here</h3>
+                            <p>Upload or paste your data and click "Generate Chart" to begin</p>
+                        </div>
+                    </div>
+                    <canvas id="chartCanvas"></canvas>
+                </div>
+
+                <div id="chartStats" class="stats-grid" style="display: none;">
+                    <div class="stat-card">
+                        <div id="dataPoints" class="stat-value">0</div>
+                        <div class="stat-label">Data Points</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="columnsCount" class="stat-value">0</div>
+                        <div class="stat-label">Columns</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="rowsCount" class="stat-value">0</div>
+                        <div class="stat-label">Rows</div>
+                    </div>
+                    <div class="stat-card">
+                        <div id="chartGenTime" class="stat-value">0ms</div>
+                        <div class="stat-label">Generation Time</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dataPreview" class="data-preview" style="display: none;">
+            <h3 class="section-title">📋 Data Preview</h3>
+            <div id="previewTable"></div>
+        </div>
+    </div>
+
+    <button id="fab" class="fab" title="Export Options">
+        <i class="fas fa-download"></i>
+    </button>
+
+    <script>
+        class DataVizPro {
+            constructor() {
+                this.chart = null;
+                this.parsedData = null;
+                this.initializeEventListeners();
+                this.predefinedColorSchemes = [
+                    ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe'],
+                    ['#43e97b', '#38f9d7', '#667eea', '#764ba2', '#f093fb'],
+                    ['#fa709a', '#fee140', '#667eea', '#764ba2', '#f093fb'],
+                    ['#a8edea', '#fed6e3', '#667eea', '#764ba2', '#f093fb']
+                ];
+            }
+
+            initializeEventListeners() {
+                document.getElementById('generateChart').addEventListener('click', () => this.generateChart());
+                document.getElementById('clearData').addEventListener('click', () => this.clearData());
+                document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileUpload(e));
+                document.getElementById('exportSVG').addEventListener('click', () => this.exportChart('svg'));
+                document.getElementById('exportPNG').addEventListener('click', () => this.exportChart('png'));
+                document.getElementById('generateEmbed').addEventListener('click', () => this.generateEmbedCode());
+                document.getElementById('downloadData').addEventListener('click', () => this.downloadProcessedData());
+                document.getElementById('fab').addEventListener('click', () => this.showExportOptions(true));
+                document.getElementById('sampleData').addEventListener('click', () => this.loadSampleData());
+                document.getElementById('darkMode').addEventListener('change', () => this.toggleDarkMode());
+                
+                // Real-time preview updates
+                document.getElementById('chartType').addEventListener('change', () => this.updatePreview());
+                document.getElementById('primaryColor').addEventListener('change', () => this.updatePreview());
+                document.getElementById('secondaryColor').addEventListener('change', () => this.updatePreview());
+                document.getElementById('accentColor').addEventListener('change', () => this.updatePreview());
+                document.getElementById('bgColor').addEventListener('change', () => this.updatePreview());
+            }
+
+            showLoading(show = true) {
+                const loadingEl = document.getElementById('loading');
+                const generateBtn = document.getElementById('generateChart');
+                
+                if (show) {
+                    loadingEl.style.display = 'block';
+                    loadingEl.classList.add('bounce-in');
+                    generateBtn.disabled = true;
+                    
+                    // Simulate progress
+                    let progress = 0;
+                    const progressInterval = setInterval(() => {
+                        progress += Math.random() * 30;
+                        if (progress > 90) progress = 90;
+                        document.getElementById('progressFill').style.width = progress + '%';
+                    }, 100);
+                    
+                    // Store interval for cleanup
+                    this.progressInterval = progressInterval;
+                } else {
+                    loadingEl.style.display = 'none';
+                    loadingEl.classList.remove('bounce-in');
+                    generateBtn.disabled = false;
+                    
+                    // Complete progress
+                    document.getElementById('progressFill').style.width = '100%';
+                    setTimeout(() => {
+                        document.getElementById('progressFill').style.width = '0%';
+                    }, 500);
+                    
+                    // Clear progress interval
+                    if (this.progressInterval) {
+                        clearInterval(this.progressInterval);
+                        this.progressInterval = null;
+                    }
+                }
+            }
+
+            showMessage(type, message) {
+                const errorEl = document.getElementById('errorMessage');
+                const successEl = document.getElementById('successMessage');
+                
+                if (type === 'error') {
+                    document.getElementById('errorText').textContent = message;
+                    errorEl.style.display = 'flex';
+                    errorEl.classList.add('slide-up');
+                    successEl.style.display = 'none';
+                } else {
+                    document.getElementById('successText').textContent = message;
+                    successEl.style.display = 'flex';
+                    successEl.classList.add('slide-up');
+                    errorEl.style.display = 'none';
+                }
+
+                // Auto-hide messages after 6 seconds
+                setTimeout(() => {
+                    errorEl.style.display = 'none';
+                    successEl.style.display = 'none';
+                    errorEl.classList.remove('slide-up');
+                    successEl.classList.remove('slide-up');
+                }, 6000);
+            }
+
+            handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    document.getElementById('dataInput').value = e.target.result;
+                    this.showMessage('success', `File "${file.name}" loaded successfully!`);
+                };
+                reader.readAsText(file);
+            }
+
+            parseData(rawData) {
+                const delimiter = document.getElementById('delimiter').value;
+                
+                try {
+                    const result = Papa.parse(rawData.trim(), {
+                        delimiter: delimiter === '\\t' ? '\t' : delimiter,
+                        header: true,
+                        skipEmptyLines: true,
+                        dynamicTyping: true,
+                        transformHeader: (header) => header.trim()
+                    });
+
+                    if (result.errors.length > 0) {
+                        throw new Error(`Parsing errors: ${result.errors.map(e => e.message).join(', ')}`);
+                    }
+
+                    if (result.data.length === 0) {
+                        throw new Error('No data found in input');
+                    }
+
+                    return result.data;
+                } catch (error) {
+                    throw new Error(`Data parsing failed: ${error.message}`);
+                }
+            }
+
+            generateChart() {
+                const startTime = performance.now();
+                this.showLoading(true);
+
+                try {
+                    const rawData = document.getElementById('dataInput').value.trim();
+                    if (!rawData) {
+                        throw new Error('Please provide data input');
+                    }
+
+                    this.parsedData = this.parseData(rawData);
+                    
+                    // Update statistics
+                    this.updateStatistics(startTime);
+                    
+                    // Generate the chart
+                    this.createChart();
+                    
+                    // Show export options
+                    this.showExportOptions(true);
+                    
+                    // Show data preview
+                    this.showDataPreview();
+
+                    this.showMessage('success', 'Chart generated successfully!');
+                    
+                } catch (error) {
+                    this.showMessage('error', error.message);
+                } finally {
+                    this.showLoading(false);
+                }
+            }
+
+            createChart() {
+                const ctx = document.getElementById('chartCanvas').getContext('2d');
+                const chartType = document.getElementById('chartType').value;
+                
+                // Destroy existing chart
+                if (this.chart) {
+                    this.chart.destroy();
+                }
+
+                // Hide placeholder, show canvas
+                document.getElementById('chartPlaceholder').style.display = 'none';
+                document.getElementById('chartCanvas').style.display = 'block';
+
+                const config = this.generateChartConfig(chartType);
+                this.chart = new Chart(ctx, config);
+            }
+
+            generateChartConfig(chartType) {
+                const data = this.prepareChartData(chartType);
+                const options = this.generateChartOptions(chartType);
+
+                return {
+                    type: chartType,
+                    data: data,
+                    options: options
+                };
+            }
+
+            prepareChartData(chartType) {
+                const headers = Object.keys(this.parsedData[0]);
+                const labelColumn = headers[0];
+                const dataColumns = headers.slice(1);
+
+                const labels = this.parsedData.map(row => row[labelColumn]);
+                const colors = this.generateColors(dataColumns.length);
+
+                if (['pie', 'doughnut', 'polarArea'].includes(chartType)) {
+                    // For pie charts, use first data column
+                    const values = this.parsedData.map(row => row[dataColumns[0]] || 0);
+                    return {
+                        labels: labels,
+                        datasets: [{
+                            data: values,
+                            backgroundColor: colors,
+                            borderWidth: 2,
+                            borderColor: document.getElementById('bgColor').value
+                        }]
+                    };
+                } else if (chartType === 'scatter' || chartType === 'bubble') {
+                    // For scatter/bubble charts
+                    const datasets = dataColumns.slice(0, 2).map((col, index) => ({
+                        label: col,
+                        data: this.parsedData.map(row => ({
+                            x: row[dataColumns[0]] || 0,
+                            y: row[dataColumns[1]] || 0,
+                            r: chartType === 'bubble' ? Math.abs(row[dataColumns[0]] || 0) / 10 : undefined
+                        })),
+                        backgroundColor: colors[index],
+                        borderColor: colors[index],
+                        borderWidth: 2
+                    }));
+                    return { datasets };
+                } else {
+                    // For line, bar, radar charts
+                    const datasets = dataColumns.map((col, index) => ({
+                        label: col,
+                        data: this.parsedData.map(row => row[col] || 0),
+                        backgroundColor: chartType === 'line' ? 
+                            colors[index] + '20' : colors[index],
+                        borderColor: colors[index],
+                        borderWidth: 3,
+                        fill: chartType === 'line' ? false : true,
+                        tension: chartType === 'line' ? 0.4 : 0
+                    }));
+
+                    return {
+                        labels: labels,
+                        datasets: datasets
+                    };
+                }
+            }
+
+            generateChartOptions(chartType) {
+                const showGrid = document.getElementById('showGrid').checked;
+                const showLegend = document.getElementById('showLegend').checked;
+                const animateChart = document.getElementById('animateChart').checked;
+                const responsive = document.getElementById('responsive').checked;
+                const showValues = document.getElementById('showValues').checked;
+
+                const bgColor = document.getElementById('bgColor').value;
+                const textColor = this.isDarkColor(bgColor) ? '#ffffff' : '#2d3748';
+
+                const options = {
+                    responsive: responsive,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: showLegend,
+                            position: 'top',
+                            labels: {
+                                boxWidth: 12,
+                                padding: 15,
+                                font: {
+                                    size: 12,
+                                    weight: '600'
+                                },
+                                color: textColor
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: '#667eea',
+                            borderWidth: 1,
+                            cornerRadius: 8,
+                            displayColors: true
+                        },
+                        datalabels: {
+                            display: showValues,
+                            color: textColor,
+                            font: {
+                                weight: 'bold'
+                            },
+                            formatter: (value) => {
+                                if (value > 1000) return (value/1000).toFixed(1) + 'k';
+                                return value;
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: animateChart ? 1200 : 0,
+                        easing: 'easeInOutQuart'
+                    }
+                };
+
+                // Add scales for charts that support them
+                if (!['pie', 'doughnut', 'polarArea'].includes(chartType)) {
+                    options.scales = {
+                        x: {
+                            grid: {
+                                display: showGrid,
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11
+                                },
+                                color: textColor
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: showGrid,
+                                color: 'rgba(0,0,0,0.1)'
+                            },
+                            ticks: {
+                                font: {
+                                    size: 11
+                                },
+                                color: textColor
+                            }
+                        }
+                    };
+                }
+
+                return options;
+            }
+
+            isDarkColor(color) {
+                // Convert hex color to RGB
+                const r = parseInt(color.substr(1, 2), 16);
+                const g = parseInt(color.substr(3, 2), 16);
+                const b = parseInt(color.substr(5, 2), 16);
+                
+                // Calculate luminance
+                const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                return luminance < 0.5;
+            }
+
+            generateColors(count) {
+                const primary = document.getElementById('primaryColor').value;
+                const secondary = document.getElementById('secondaryColor').value;
+                const accent = document.getElementById('accentColor').value;
+                
+                // For charts requiring multiple colors, generate a gradient
+                if (count > 3) {
+                    const gradient = [];
+                    for (let i = 0; i < count; i++) {
+                        const ratio = i / (count - 1);
+                        if (ratio < 0.5) {
+                            // Blend primary and secondary
+                            const r = Math.round(parseInt(primary.substr(1, 2), 16) * (1 - ratio * 2) + parseInt(secondary.substr(1, 2), 16) * (ratio * 2));
+                            const g = Math.round(parseInt(primary.substr(3, 2), 16) * (1 - ratio * 2) + parseInt(secondary.substr(3, 2), 16) * (ratio * 2));
+                            const b = Math.round(parseInt(primary.substr(5, 2), 16) * (1 - ratio * 2) + parseInt(secondary.substr(5, 2), 16) * (ratio * 2));
+                            gradient.push(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+                        } else {
+                            // Blend secondary and accent
+                            const r = Math.round(parseInt(secondary.substr(1, 2), 16) * (2 - ratio * 2) + parseInt(accent.substr(1, 2), 16) * (ratio * 2 - 1));
+                            const g = Math.round(parseInt(secondary.substr(3, 2), 16) * (2 - ratio * 2) + parseInt(accent.substr(3, 2), 16) * (ratio * 2 - 1));
+                            const b = Math.round(parseInt(secondary.substr(5, 2), 16) * (2 - ratio * 2) + parseInt(accent.substr(5, 2), 16) * (ratio * 2 - 1));
+                            gradient.push(`#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`);
+                        }
+                    }
+                    return gradient;
+                }
+                
+                return [primary, secondary, accent];
+            }
+
+            updateStatistics(startTime) {
+                const endTime = performance.now();
+                const genTime = Math.round(endTime - startTime);
+                
+                const dataPoints = this.parsedData.length * (Object.keys(this.parsedData[0]).length - 1);
+                const columnsCount = Object.keys(this.parsedData[0]).length;
+                const rowsCount = this.parsedData.length;
+                
+                document.getElementById('dataPoints').textContent = dataPoints.toLocaleString();
+                document.getElementById('columnsCount').textContent = columnsCount;
+                document.getElementById('rowsCount').textContent = rowsCount.toLocaleString();
+                document.getElementById('chartGenTime').textContent = `${genTime}ms`;
+                
+                document.getElementById('chartStats').style.display = 'grid';
+            }
+
+            showDataPreview() {
+                const previewEl = document.getElementById('dataPreview');
+                const tableEl = document.getElementById('previewTable');
+                
+                if (!this.parsedData || this.parsedData.length === 0) {
+                    previewEl.style.display = 'none';
+                    return;
+                }
+                
+                const headers = Object.keys(this.parsedData[0]);
+                let tableHTML = '<table><thead><tr>';
+                
+                // Create header row
+                headers.forEach(header => {
+                    tableHTML += `<th>${header}</th>`;
+                });
+                tableHTML += '</tr></thead><tbody>';
+                
+                // Create data rows (limit to 10 rows for preview)
+                const rowCount = Math.min(10, this.parsedData.length);
+                for (let i = 0; i < rowCount; i++) {
+                    tableHTML += '<tr>';
+                    headers.forEach(header => {
+                        tableHTML += `<td>${this.parsedData[i][header]}</td>`;
+                    });
+                    tableHTML += '</tr>';
+                }
+                
+                tableHTML += '</tbody></table>';
+                
+                if (this.parsedData.length > 10) {
+                    tableHTML += `<p>Showing 10 of ${this.parsedData.length} rows</p>`;
+                }
+                
+                tableEl.innerHTML = tableHTML;
+                previewEl.style.display = 'block';
+            }
+
+            exportChart(format) {
+                if (!this.chart) {
+                    this.showMessage('error', 'No chart available to export');
+                    return;
+                }
+                
+                try {
+                    const canvas = document.getElementById('chartCanvas');
+                    let mimeType, extension;
+                    
+                    if (format === 'svg') {
+                        // SVG export would require additional libraries in a real implementation
+                        this.showMessage('error', 'SVG export requires additional setup in this demo');
+                        return;
+                    } else {
+                        mimeType = 'image/png';
+                        extension = 'png';
+                    }
+                    
+                    const image = canvas.toDataURL(mimeType);
+                    const link = document.createElement('a');
+                    link.download = `chart-${new Date().toISOString().slice(0, 10)}.${extension}`;
+                    link.href = image;
+                    link.click();
+                    
+                    this.showMessage('success', `Chart exported as ${extension.toUpperCase()} successfully!`);
+                } catch (error) {
+                    this.showMessage('error', `Export failed: ${error.message}`);
+                }
+            }
+
+            generateEmbedCode() {
+                if (!this.chart) {
+                    this.showMessage('error', 'No chart available to embed');
+                    return;
+                }
+                
+                const canvas = document.getElementById('chartCanvas');
+                const image = canvas.toDataURL('image/png');
+                
+                const embedCode = `<div class="chart-embed">
+    <img src="${image}" alt="Data Visualization Chart">
+    <p>Generated with DataViz Pro</p>
+</div>`;
+                
+                // In a real app, you would show this in a modal
+                navigator.clipboard.writeText(embedCode).then(() => {
+                    this.showMessage('success', 'Embed code copied to clipboard!');
+                });
+            }
+
+            downloadProcessedData() {
+                if (!this.parsedData || this.parsedData.length === 0) {
+                    this.showMessage('error', 'No data available to download');
+                    return;
+                }
+                
+                try {
+                    const csv = Papa.unparse(this.parsedData);
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement('a');
+                    const url = URL.createObjectURL(blob);
+                    
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', `data-${new Date().toISOString().slice(0, 10)}.csv`);
+                    link.style.visibility = 'hidden';
+                    
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    
+                    this.showMessage('success', 'Data downloaded as CSV successfully!');
+                } catch (error) {
+                    this.showMessage('error', `Data download failed: ${error.message}`);
+                }
+            }
+
+            showExportOptions(show = true) {
+                const exportButtons = ['exportSVG', 'exportPNG', 'generateEmbed', 'downloadData'];
+                const fab = document.getElementById('fab');
+                
+                exportButtons.forEach((id, index) => {
+                    const btn = document.getElementById(id);
+                    if (show) {
+                        setTimeout(() => {
+                            btn.style.display = 'inline-flex';
+                            btn.classList.add('bounce-in');
+                        }, index * 100);
+                    } else {
+                        btn.style.display = 'none';
+                        btn.classList.remove('bounce-in');
+                    }
+                });
+                
+                // Show/hide FAB
+                if (show) {
+                    fab.style.display = 'none';
+                } else {
+                    fab.style.display = 'flex';
+                }
+            }
+
+            updatePreview() {
+                if (this.chart) {
+                    this.createChart();
+                }
+            }
+
+            clearData() {
+                document.getElementById('dataInput').value = '';
+                document.getElementById('fileInput').value = '';
+                
+                if (this.chart) {
+                    this.chart.destroy();
+                    this.chart = null;
+                }
+                
+                document.getElementById('chartPlaceholder').style.display = 'flex';
+                document.getElementById('chartCanvas').style.display = 'none';
+                document.getElementById('chartStats').style.display = 'none';
+                document.getElementById('dataPreview').style.display = 'none';
+                
+                this.showExportOptions(false);
+                this.showMessage('success', 'All data cleared successfully!');
+            }
+
+            loadSampleData() {
+                const sampleData = `Month,Revenue,Expenses,Profit
+Jan,12000,8000,4000
+Feb,15000,9000,6000
+Mar,11000,7500,3500
+Apr,17000,10000,7000
+May,14000,8500,5500
+Jun,16000,9500,6500
+Jul,13000,8200,4800
+Aug,18000,11000,7000
+Sep,12500,7800,4700
+Oct,19000,11500,7500
+Nov,16500,9800,6700
+Dec,22000,14000,8000`;
+                
+                document.getElementById('dataInput').value = sampleData;
+                this.showMessage('success', 'Sample data loaded successfully!');
+            }
+
+            toggleDarkMode() {
+                const isDarkMode = document.getElementById('darkMode').checked;
+                document.body.classList.toggle('dark-mode', isDarkMode);
+                
+                if (this.chart) {
+                    this.updatePreview();
+                }
+            }
+        }
+
+        // Initialize the application when the DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const dataViz = new DataVizPro();
+            
+            // Initialize dark mode based on system preference
+            const darkModePref = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            document.getElementById('darkMode').checked = darkModePref;
+            document.body.classList.toggle('dark-mode', darkModePref);
+        });
+    </script>
+
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --text-primary: #2d3748;
+            --text-secondary: #4a5568;
+            --text-muted: #718096;
+            --surface-light: #f8fafc;
+            --surface-medium: #e2e8f0;
+            --surface-dark: #cbd5e0;
+            --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            --shadow-xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            --border-radius-sm: 8px;
+            --border-radius-md: 12px;
+            --border-radius-lg: 20px;
+            --transition-fast: 0.15s ease-out;
+            --transition-normal: 0.3s ease-out;
+            --transition-slow: 0.5s ease-out;
+        }
+
+        .dark-mode {
+            --text-primary: #e2e8f0;
+            --text-secondary: #cbd5e0;
+            --text-muted: #a0aec0;
+            --surface-light: #2d3748;
+            --surface-medium: #4a5568;
+            --surface-dark: #718096;
+        }
+
+        .dark-mode body {
+            background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+        }
+
+        .dark-mode .panel {
+            background: rgba(45, 55, 72, 0.95);
+            color: var(--text-primary);
+        }
+
+        .dark-mode .data-input,
+        .dark-mode select {
+            background: #2d3748;
+            color: var(--text-primary);
+            border-color: var(--surface-medium);
+        }
+
+        .dark-mode .chart-container {
+            background: #2d3748;
+        }
+
+        .dark-mode .stat-card {
+            background: rgba(45, 55, 72, 0.95);
+            color: var(--text-primary);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        *::before,
+        *::after {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--primary-gradient);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            line-height: 1.6;
+            position: relative;
+            transition: background var(--transition-slow);
+            padding: 20px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 40%, rgba(120, 219, 255, 0.2) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            animation: fadeInUp 0.8s var(--transition-normal);
+            position: relative;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(102, 126, 234, 0.8);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: white;
+            position: relative;
+            z-index: 2;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: var(--secondary-gradient);
+            border-radius: 2px;
+            opacity: 0.8;
+        }
+
+        .header h1 {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            margin-bottom: 1rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #fff, #f0f8ff, #e6f3ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            display: inline-block;
+        }
+
+        .header h1::after {
+            content: '✨';
+            position: absolute;
+            top: -10px;
+            right: -30px;
+            font-size: 1.5rem;
+            animation: pulse 2s infinite;
+        }
+
+        .header p {
+            font-size: clamp(1rem, 2vw, 1.3rem);
+            opacity: 0.95;
+            max-width: 700px;
+            margin: 0 auto;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: minmax(400px, 1fr) minmax(600px, 2fr);
+            gap: 2rem;
+            margin-bottom: 2rem;
+            align-items: start;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px) saturate(180%);
+            border-radius: var(--border-radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--glass-border);
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--primary-gradient);
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+        }
+
+        .panel:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: var(--shadow-xl), 0 0 40px rgba(102, 126, 234, 0.2);
+        }
+
+        .panel:hover::before {
+            opacity: 1;
+        }
+
+        .panel.control-panel {
+            animation: slideInLeft 0.8s var(--transition-normal);
+        }
+
+        .panel.chart-panel {
+            animation: slideInRight 0.8s var(--transition-normal) 0.2s both;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 28px;
+            background: var(--primary-gradient);
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.3);
+        }
+
+        .section-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(to right, var(--surface-medium), transparent);
+            margin-left: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .form-group.enhanced {
+            background: var(--surface-light);
+            border-radius: var(--border-radius-md);
+            padding: 1.5rem;
+            border: 1px solid var(--surface-medium);
+            transition: all var(--transition-normal);
+        }
+
+        .form-group.enhanced:hover {
+            border-color: rgba(102, 126, 234, 0.3);
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.05);
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+        }
+
+        .form-group label.required::after {
+            content: '*';
+            color: #f56565;
+            margin-left: 4px;
+        }
+
+        .data-input {
+            width: 100%;
+            min-height: 220px;
+            padding: 1.25rem;
+            border: 2px solid var(--surface-medium);
+            border-radius: var(--border-radius-md);
+            font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+            transition: all var(--transition-normal);
+            background: var(--surface-light);
+            position: relative;
+        }
+
+        .data-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+            background: white;
+            transform: scale(1.01);
+        }
+
+        .data-input::placeholder {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: block;
+            width: 100%;
+        }
+
+        .file-input {
+            position: absolute;
+            left: -9999px;
+            opacity: 0;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 1.25rem 2rem;
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: var(--border-radius-md);
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border: 2px solid transparent;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .file-input-label::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .file-input-label:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(255,255,255,0.3);
+        }
+
+        .file-input-label:hover::before {
+            left: 100%;
+        }
+
+        .file-input-label:active {
+            transform: translateY(-1px);
+        }
+
+        .select-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .select-wrapper {
+            position: relative;
+        }
+
+        .select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            transition: transform var(--transition-normal);
+        }
+
+        .select-wrapper:hover::after {
+            transform: translateY(-50%) scale(1.2);
+            color: #667eea;
+        }
+
+        select {
+            width: 100%;
+            padding: 1rem 3rem 1rem 1rem;
+            border: 2px solid var(--surface-medium);
+            border-radius: var(--border-radius-md);
+            background: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
+            transform: scale(1.02);
+        }
+
+        .color-picker-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1.5rem;
+            padding: 1rem;
+            background: var(--surface-light);
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--surface-medium);
+        }
+
+        .color-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            border-radius: var(--border-radius-md);
+            transition: all var(--transition-normal);
+            cursor: pointer;
+        }
+
+        .color-input-wrapper:hover {
+            background: white;
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-2px);
+        }
+
+        .color-input {
+            width: 70px;
+            height: 70px;
+            border: 3px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            box-shadow: var(--shadow-md);
+            position: relative;
+        }
+
+        .color-input::before {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            padding: 3px;
+            background: var(--primary-gradient);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: xor;
+            -webkit-mask-composite: xor;
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+        }
+
+        .color-input:hover {
+            transform: scale(1.15);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .color-input:hover::before {
+            opacity: 1;
+        }
+
+        .color-input-wrapper label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius-md);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            min-width: 160px;
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:active {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #718096, #4a5568);
+        }
+
+        .btn-success {
+            background: var(--success-gradient);
+        }
+
+        .btn-danger {
+            background: var(--secondary-gradient);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 500px;
+            background: white;
+            border-radius: var(--border-radius-lg);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            border: 1px solid var(--surface-medium);
+        }
+
+        .chart-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            font-size: 1.125rem;
+            text-align: center;
+            background: linear-gradient(135deg, var(--surface-light), #edf2f7);
+            border-radius: var(--border-radius-md);
+            border: 2px dashed var(--surface-dark);
+            position: relative;
+        }
+
+        .chart-placeholder::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23cbd5e0"><path d="M3 3v18h18V3H3zm16 16H5V5h14v14zM7 7h2v8H7V7zm4-2h2v10h-2V5zm4 4h2v6h-2V9z"/></svg>') no-repeat center;
+            background-size: contain;
+            opacity: 0.3;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 2rem;
+            border-radius: var(--border-radius-md);
+            text-align: center;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--glass-border);
+            transition: all var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary-gradient);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .data-preview {
+            background: var(--surface-light);
+            border: 2px solid var(--surface-medium);
+            border-radius: var(--border-radius-md);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', monospace;
+            font-size: 0.75rem;
+            line-height: 1.6;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .data-preview::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .data-preview::-webkit-scrollbar-track {
+            background: var(--surface-medium);
+            border-radius: 4px;
+        }
+
+        .data-preview::-webkit-scrollbar-thumb {
+            background: var(--primary-gradient);
+            border-radius: 4px;
+        }
+
+        .data-preview table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .data-preview th {
+            background: var(--primary-gradient);
+            color: white;
+            font-weight: 600;
+            text-align: left;
+        }
+
+        .data-preview td,
+        .data-preview th {
+            padding: 0.75rem;
+            border: 1px solid var(--surface-medium);
+        }
+
+        .data-preview tr:nth-child(even) {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .message {
+            padding: 1.25rem;
+            border-radius: var(--border-radius-md);
+            margin-top: 1rem;
+            font-weight: 600;
+            display: none;
+            position: relative;
+            border-left: 4px solid;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #fed7d7, #feb2b2);
+            color: #c53030;
+            border-left-color: #e53e3e;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #c6f6d5, #9ae6b4);
+            color: #276749;
+            border-left-color: #38a169;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            border: 4px solid var(--surface-medium);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .advanced-options {
+            background: var(--surface-light);
+            border-radius: var(--border-radius-md);
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            border: 2px solid var(--surface-medium);
+            transition: all var(--transition-normal);
+        }
+
+        .advanced-options:hover {
+            border-color: rgba(102, 126, 234, 0.3);
+        }
+
+        .advanced-options h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: var(--border-radius-sm);
+            transition: all var(--transition-normal);
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper:hover {
+            background: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #667eea;
+            cursor: pointer;
+        }
+
+        .checkbox-wrapper label {
+            margin: 0;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        .export-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            margin-left: 10px;
+        }
+
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 250px;
+            background: var(--text-primary);
+            color: white;
+            text-align: center;
+            border-radius: var(--border-radius-sm);
+            padding: 0.75rem;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -125px;
+            opacity: 0;
+            transition: opacity var(--transition-normal);
+            font-size: 0.75rem;
+            font-weight: 400;
+            line-height: 1.4;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .tooltip .tooltiptext::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -5px;
+            border-width: 5px;
+            border-style: solid;
+            border-color: var(--text-primary) transparent transparent transparent;
+        }
+
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--surface-medium);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 3px;
+            transition: width var(--transition-normal);
+            position: relative;
+            width: 0%;
+        }
+
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .btn-group {
+            display: flex;
+            border-radius: var(--border-radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-group .btn {
+            border-radius: 0;
+            border-right: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .btn-group .btn:first-child {
+            border-top-left-radius: var(--border-radius-md);
+            border-bottom-left-radius: var(--border-radius-md);
+        }
+
+        .btn-group .btn:last-child {
+            border-top-right-radius: var(--border-radius-md);
+            border-bottom-right-radius: var(--border-radius-md);
+            border-right: none;
+        }
+
+        .btn-icon {
+            width: 48px;
+            height: 48px;
+            min-width: 48px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            transform: scale(1.1);
+        }
+
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all var(--transition-normal);
+            z-index: 1000;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-xl);
+        }
+
+        .chart-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 1rem;
+            background: var(--surface-light);
+            border-radius: var(--border-radius-sm);
+        }
+
+        .chart-controls .btn-group {
+            box-shadow: none;
+        }
+
+        .chart-controls .btn {
+            padding: 0.5rem 1rem;
+            font-size: 0.75rem;
+            min-width: auto;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.3);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.05);
+            }
+            70% {
+                transform: scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bounce-in {
+            animation: bounceIn 0.6s ease-out;
+        }
+
+        .slide-up {
+            animation: slideUp 0.4s ease-out;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+            
+            .panel {
+                padding: 1.5rem;
+            }
+            
+            .select-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
+                justify-content: stretch;
+            }
+            
+            .btn {
+                flex: 1;
+                min-width: auto;
+            }
+
+            .color-picker-group {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .panel {
+                padding: 1rem;
+            }
+
+            .color-picker-group {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</body>
+</html>
