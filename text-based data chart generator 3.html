@@ -1,0 +1,1413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataViz Pro - Advanced Chart Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        /* Floating particles animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255,255,255,0.1) 2px, transparent 2px),
+                radial-gradient(circle at 75% 75%, rgba(255,255,255,0.05) 1px, transparent 1px);
+            background-size: 50px 50px, 30px 30px;
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            animation: fadeInUp 0.8s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+            animation: fadeInDown 1s ease-out;
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            background: linear-gradient(45deg, #fff, #e0e7ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+        }
+
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.95;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 35px;
+            box-shadow: 
+                0 25px 50px rgba(0,0,0,0.1),
+                0 0 0 1px rgba(255,255,255,0.2),
+                inset 0 1px 0 rgba(255,255,255,0.3);
+            border: 1px solid rgba(255,255,255,0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            animation: slideIn 0.6s ease-out forwards;
+            animation-delay: 0.2s;
+            opacity: 0;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.3), transparent);
+        }
+
+        .panel:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 35px 70px rgba(0,0,0,0.15),
+                0 0 0 1px rgba(255,255,255,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.4);
+        }
+
+        .panel h2 {
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 700;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .panel h2::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 60px;
+            height: 3px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+        }
+
+        .input-section {
+            margin-bottom: 25px;
+        }
+
+        .input-section label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .data-input {
+            width: 100%;
+            height: 220px;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            line-height: 1.6;
+        }
+
+        .data-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 
+                0 0 0 4px rgba(102, 126, 234, 0.1),
+                0 4px 12px rgba(102, 126, 234, 0.15);
+            background: #ffffff;
+            transform: scale(1.01);
+        }
+
+        .data-input::placeholder {
+            color: #94a3b8;
+            line-height: 1.6;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        select, input {
+            padding: 14px 18px;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 14px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            font-weight: 500;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 
+                0 0 0 4px rgba(102, 126, 234, 0.1),
+                0 2px 8px rgba(102, 126, 234, 0.15);
+            background: #ffffff;
+            transform: translateY(-1px);
+        }
+
+        select:hover, input:hover {
+            border-color: #cbd5e0;
+            transform: translateY(-1px);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px 28px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(-1px) scale(1.01);
+            transition: all 0.1s;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            margin-left: 10px;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 520px;
+            margin-bottom: 25px;
+            border-radius: 16px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .chart-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            border: 2px dashed #cbd5e0;
+            border-radius: 16px;
+            color: #718096;
+            font-size: 18px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chart-placeholder::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.05), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .chart-placeholder:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e6f2ff 100%);
+            transform: scale(1.01);
+        }
+
+        .export-section {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .data-preview {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .data-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        .data-preview th,
+        .data-preview td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .data-preview th {
+            background: #edf2f7;
+            font-weight: 600;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+            color: #c53030;
+            padding: 18px 20px;
+            border-radius: 12px;
+            margin-top: 18px;
+            border-left: 5px solid #e53e3e;
+            box-shadow: 0 4px 12px rgba(197, 48, 48, 0.15);
+            font-weight: 500;
+            position: relative;
+            animation: slideInLeft 0.3s ease-out;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #c6f6d5 0%, #9ae6b4 100%);
+            color: #22543d;
+            padding: 18px 20px;
+            border-radius: 12px;
+            margin-top: 18px;
+            border-left: 5px solid #38a169;
+            box-shadow: 0 4px 12px rgba(56, 161, 105, 0.15);
+            font-weight: 500;
+            position: relative;
+            animation: slideInLeft 0.3s ease-out;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .advanced-options {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            padding: 25px;
+            margin-top: 25px;
+            border: 1px solid rgba(102, 126, 234, 0.1);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .advanced-options::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .advanced-options:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.1);
+        }
+
+        .advanced-options h3 {
+            margin-bottom: 20px;
+            color: #2d3748;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .color-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .color-option {
+            width: 60px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .color-option:hover,
+        .color-option.active {
+            border-color: #667eea;
+            transform: scale(1.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #e6fffa 0%, #b2f5ea 100%);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 1px solid rgba(56, 178, 172, 0.2);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #38b2ac, #4fd1c7);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px) scale(1.03);
+            box-shadow: 0 10px 25px rgba(56, 178, 172, 0.3);
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        }
+
+        .stat-card .number {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #065f46;
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .stat-card .label {
+            font-size: 0.85rem;
+            color: #047857;
+            text-transform: uppercase;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .data-preview td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            transition: background-color 0.2s ease;
+        }
+
+        .data-preview th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 12px;
+        }
+
+        .data-preview tbody tr:hover {
+            background: linear-gradient(135deg, #f0f4ff 0%, #e6f2ff 100%);
+        }
+
+        /* Enhanced export section */
+        .export-section {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 25px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border-radius: 16px;
+            border: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        /* Pulse animation for call-to-action buttons */
+        .btn-primary {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            }
+            50% {
+                box-shadow: 0 4px 25px rgba(102, 126, 234, 0.5);
+            }
+            100% {
+                box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            }
+        }
+
+        /* Enhanced mobile responsiveness */
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .controls-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .export-section {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+
+            .header p {
+                font-size: 1.1rem;
+            }
+            
+            .panel {
+                padding: 25px 20px;
+                margin: 10px;
+            }
+
+            .chart-container {
+                height: 400px;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+
+            .data-input {
+                height: 180px;
+                font-size: 13px;
+            }
+
+            .btn {
+                padding: 14px 24px;
+                font-size: 14px;
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .panel h2 {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* Enhanced focus states for accessibility */
+        *:focus {
+            outline: 2px solid #667eea;
+            outline-offset: 2px;
+        }
+
+        /* Smooth transitions for all interactive elements */
+        * {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b46c1 100%);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e6f2ff 100%);
+            border-radius: 16px;
+            margin-top: 20px;
+            border: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .spinner {
+            border: 4px solid rgba(102, 126, 234, 0.1);
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .feature-highlight {
+            background: linear-gradient(135deg, #fef5e7 0%, #fed7aa 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 25px;
+            border-left: 5px solid #f6ad55;
+            position: relative;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(246, 173, 85, 0.2);
+        }
+
+        .feature-highlight::before {
+            content: '💡';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: linear-gradient(135deg, #fef5e7 0%, #fed7aa 100%);
+            padding: 8px 12px;
+            border-radius: 50%;
+            font-size: 18px;
+            border: 2px solid #f6ad55;
+        }
+
+        .feature-highlight:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(246, 173, 85, 0.2);
+        }
+
+        .feature-highlight strong {
+            color: #c05621;
+            font-weight: 700;
+        }
+
+        .feature-highlight ul {
+            margin-top: 12px;
+            padding-left: 25px;
+        }
+
+        .feature-highlight li {
+            margin-bottom: 6px;
+            color: #7c2d12;
+            font-weight: 500;
+        }
+        /* Add smooth scrolling and enhanced responsiveness */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* File input styling */
+        input[type="file"] {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px dashed #cbd5e0;
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        input[type="file"]:hover {
+            border-color: #667eea;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e6f2ff 100%);
+            transform: translateY(-1px);
+        }
+
+        /* Label enhancements */
+        .input-section label,
+        .control-group label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 700;
+            color: #2d3748;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Enhanced data preview */
+        .data-preview {
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 2px solid rgba(102, 126, 234, 0.1);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            max-height: 250px;
+            overflow-y: auto;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .data-preview h4 {
+            color: #2d3748;
+            margin-bottom: 15px;
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        /* Table styling */
+        .data-preview table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Header cells */
+        .data-preview th {
+            background-color: #e2e8f0;
+            color: #2d3748;
+            text-align: left;
+            padding: 12px 16px;
+            font-weight: 600;
+            border-bottom: 1px solid #cbd5e0;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        /* Data cells */
+        .data-preview td {
+            padding: 12px 16px;
+            border-bottom: 1px solid #edf2f7;
+            color: #4a5568;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        /* Zebra striping */
+        .data-preview tr:nth-child(even) td {
+            background-color: #f7fafc;
+        }
+
+        /* Hover effect */
+        .data-preview tr:hover td {
+            background-color: #ebf8ff;
+            transition: background 0.2s ease;
+        }
+
+        /* Scrollbar style (optional, WebKit only) */
+        .data-preview::-webkit-scrollbar {
+            width: 6px;
+        }
+        .data-preview::-webkit-scrollbar-thumb {
+            background-color: rgba(160, 174, 192, 0.5);
+            border-radius: 3px;
+        }
+
+                
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 DataViz Pro</h1>
+            <p>Professional-grade data visualization platform with advanced analytics</p>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <h2>📝 Data Input & Configuration</h2>
+                
+                <div class="input-section">
+                    <label for="dataInput">Paste your data (CSV, TSV, or Tab-separated):</label>
+                    <textarea id="dataInput" class="data-input" placeholder="Example:
+Product,Sales,Region
+Laptop,1200,North
+Phone,800,South
+Tablet,600,East
+
+Or try file upload below..."></textarea>
+                    
+                    <input type="file" id="fileInput" accept=".csv,.tsv,.txt" style="margin-top: 10px;">
+                </div>
+
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label for="chartType">Chart Type:</label>
+                        <select id="chartType">
+                            <option value="bar">📊 Bar Chart</option>
+                            <option value="line">📈 Line Chart</option>
+                            <option value="pie">🥧 Pie Chart</option>
+                            <option value="doughnut">🍩 Doughnut Chart</option>
+                            <option value="radar">🎯 Radar Chart</option>
+                            <option value="polarArea">⭕ Polar Area</option>
+                            <option value="scatter">💫 Scatter Plot</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="delimiter">Data Delimiter:</label>
+                        <select id="delimiter">
+                            <option value="auto">Auto Detect</option>
+                            <option value=",">Comma (,)</option>
+                            <option value="\t">Tab</option>
+                            <option value=";">Semicolon (;)</option>
+                            <option value="|">Pipe (|)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label for="chartTitle">Chart Title:</label>
+                        <input type="text" id="chartTitle" placeholder="Enter chart title...">
+                    </div>
+
+                    <div class="control-group">
+                        <label for="animationSpeed">Animation Speed:</label>
+                        <select id="animationSpeed">
+                            <option value="0">No Animation</option>
+                            <option value="500">Fast</option>
+                            <option value="1000" selected>Normal</option>
+                            <option value="2000">Slow</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button class="btn btn-primary" onclick="generateChart()">🚀 Generate Chart</button>
+                <button class="btn btn-secondary" onclick="loadSampleData()">📋 Load Sample</button>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your data...</p>
+                </div>
+
+                <div id="messageArea"></div>
+
+                <div class="advanced-options">
+                    <h3>🎨 Visual Customization</h3>
+                    <div class="controls-grid">
+                        <div class="control-group">
+                            <label for="colorScheme">Color Scheme:</label>
+                            <select id="colorScheme">
+                                <option value="default">Default</option>
+                                <option value="vibrant">Vibrant</option>
+                                <option value="pastel">Pastel</option>
+                                <option value="professional">Professional</option>
+                                <option value="monochrome">Monochrome</option>
+                            </select>
+                        </div>
+                        <div class="control-group">
+                            <label for="gridlines">Show Grid Lines:</label>
+                            <select id="gridlines">
+                                <option value="true">Yes</option>
+                                <option value="false">No</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="data-preview" id="dataPreview" style="display: none;">
+                    <h4>📋 Data Preview</h4>
+                    <div id="previewContent"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>📈 Chart Visualization</h2>
+                
+                <div class="chart-container">
+                    <div class="chart-placeholder" id="chartPlaceholder">
+                        <div>
+                            <div style="font-size: 64px; margin-bottom: 25px; opacity: 0.7;">📊</div>
+                            <div style="font-size: 22px; font-weight: 600; margin-bottom: 15px; color: #4a5568;">Your beautiful chart will appear here</div>
+                            <div style="font-size: 16px; opacity: 0.8; color: #718096;">
+                                Paste data and click "Generate Chart" to begin your visualization journey
+                            </div>
+                            <div style="margin-top: 20px;">
+                                <div style="font-size: 12px; opacity: 0.6; color: #a0aec0;">
+                                    ✨ Supports CSV, TSV, and custom formats
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <canvas id="chartCanvas" style="display: none;"></canvas>
+                </div>
+
+                <div class="export-section">
+                    <button class="btn" onclick="exportChart('png')" id="exportPng" disabled>💾 Export PNG</button>
+                    <button class="btn" onclick="exportChart('svg')" id="exportSvg" disabled>🖼️ Export SVG</button>
+                    <button class="btn" onclick="copyEmbedCode()" id="embedBtn" disabled>🔗 Embed Code</button>
+                    <button class="btn" onclick="printChart()" id="printBtn" disabled>🖨️ Print</button>
+                </div>
+
+                <div class="stats-grid" id="statsGrid" style="display: none;">
+                    <div class="stat-card">
+                        <div class="number" id="dataPoints">0</div>
+                        <div class="label">Data Points</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="dataColumns">0</div>
+                        <div class="label">Columns</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="maxValue">0</div>
+                        <div class="label">Max Value</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="number" id="avgValue">0</div>
+                        <div class="label">Average</div>
+                    </div>
+                </div>
+
+                <div class="feature-highlight">
+                    <strong>💡 Pro Tips:</strong>
+                    <ul style="margin-top: 10px; padding-left: 20px;">
+                        <li>First row should contain column headers</li>
+                        <li>Use consistent data types in each column</li>
+                        <li>Empty cells will be filtered out automatically</li>
+                        <li>Support for dates, numbers, and text labels</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentChart = null;
+        let parsedData = null;
+
+        const colorSchemes = {
+            default: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40'],
+            vibrant: ['#FF1744', '#00E676', '#FF6D00', '#3F51B5', '#E91E63', '#00BCD4'],
+            pastel: ['#FFB3BA', '#BAFFC9', '#BAE1FF', '#FFFFBA', '#FFDFBA', '#E0BBE4'],
+            professional: ['#2E3440', '#3B4252', '#434C5E', '#4C566A', '#5E81AC', '#81A1C1'],
+            monochrome: ['#2C3E50', '#34495E', '#7F8C8D', '#95A5A6', '#BDC3C7', '#ECF0F1']
+        };
+
+        // File input handler
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('dataInput').value = e.target.result;
+                    showMessage('File loaded successfully!', 'success');
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        function showMessage(message, type = 'error') {
+            const messageArea = document.getElementById('messageArea');
+            messageArea.innerHTML = `<div class="${type}-message">${message}</div>`;
+            setTimeout(() => {
+                messageArea.innerHTML = '';
+            }, 5000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function parseData(rawData, delimiter) {
+            return new Promise((resolve, reject) => {
+                const config = {
+                    header: true,
+                    skipEmptyLines: true,
+                    dynamicTyping: true,
+                    delimiter: delimiter === 'auto' ? '' : delimiter,
+                    delimitersToGuess: [',', '\t', ';', '|']
+                };
+
+                Papa.parse(rawData, {
+                    ...config,
+                    complete: function(results) {
+                        if (results.errors.length > 0) {
+                            reject(results.errors[0].message);
+                        } else {
+                            resolve(results.data);
+                        }
+                    }
+                });
+            });
+        }
+
+        function updateDataPreview(data) {
+            const preview = document.getElementById('dataPreview');
+            const content = document.getElementById('previewContent');
+            
+            if (data.length === 0) {
+                preview.style.display = 'none';
+                return;
+            }
+
+            const headers = Object.keys(data[0]);
+            const previewData = data.slice(0, 5);
+
+            let tableHTML = '<table><thead><tr>';
+            headers.forEach(header => {
+                tableHTML += `<th>${header}</th>`;
+            });
+            tableHTML += '</tr></thead><tbody>';
+
+            previewData.forEach(row => {
+                tableHTML += '<tr>';
+                headers.forEach(header => {
+                    tableHTML += `<td>${row[header] || ''}</td>`;
+                });
+                tableHTML += '</tr>';
+            });
+
+            if (data.length > 5) {
+                tableHTML += `<tr><td colspan="${headers.length}" style="text-align: center; font-style: italic;">... and ${data.length - 5} more rows</td></tr>`;
+            }
+
+            tableHTML += '</tbody></table>';
+            content.innerHTML = tableHTML;
+            preview.style.display = 'block';
+        }
+
+        function updateStatistics(data) {
+            if (!data || data.length === 0) {
+                document.getElementById('statsGrid').style.display = 'none';
+                return;
+            }
+
+            const headers = Object.keys(data[0]);
+            const numericColumns = headers.filter(header => 
+                data.some(row => typeof row[header] === 'number')
+            );
+
+            let maxValue = 0;
+            let sum = 0;
+            let count = 0;
+
+            data.forEach(row => {
+                numericColumns.forEach(col => {
+                    if (typeof row[col] === 'number') {
+                        maxValue = Math.max(maxValue, row[col]);
+                        sum += row[col];
+                        count++;
+                    }
+                });
+            });
+
+            document.getElementById('dataPoints').textContent = data.length;
+            document.getElementById('dataColumns').textContent = headers.length;
+            document.getElementById('maxValue').textContent = maxValue.toLocaleString();
+            document.getElementById('avgValue').textContent = count > 0 ? (sum / count).toFixed(1) : '0';
+            document.getElementById('statsGrid').style.display = 'grid';
+        }
+
+        function prepareChartData(data, chartType) {
+            if (!data || data.length === 0) {
+                throw new Error('No data available');
+            }
+
+            const headers = Object.keys(data[0]);
+            if (headers.length < 2) {
+                throw new Error('At least two columns are required');
+            }
+
+            const labels = data.map(row => row[headers[0]]);
+            const datasets = [];
+
+            const colorScheme = document.getElementById('colorScheme').value;
+            const colors = colorSchemes[colorScheme];
+
+            if (chartType === 'pie' || chartType === 'doughnut' || chartType === 'polarArea') {
+                // For pie charts, use the second column as data
+                datasets.push({
+                    data: data.map(row => row[headers[1]]),
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                });
+            } else {
+                // For other charts, create datasets for each numeric column
+                headers.slice(1).forEach((header, index) => {
+                    const numericData = data.map(row => 
+                        typeof row[header] === 'number' ? row[header] : 0
+                    );
+
+                    datasets.push({
+                        label: header,
+                        data: numericData,
+                        backgroundColor: colors[index % colors.length] + '80',
+                        borderColor: colors[index % colors.length],
+                        borderWidth: 2,
+                        fill: chartType === 'line' ? false : true,
+                        tension: 0.4
+                    });
+                });
+            }
+
+            return { labels, datasets };
+        }
+
+        function generateChart() {
+            const rawData = document.getElementById('dataInput').value.trim();
+            
+            if (!rawData) {
+                showMessage('Please enter some data first!');
+                return;
+            }
+
+            showLoading(true);
+
+            const delimiter = document.getElementById('delimiter').value;
+            
+            parseData(rawData, delimiter)
+                .then(data => {
+                    parsedData = data;
+                    updateDataPreview(data);
+                    updateStatistics(data);
+                    
+                    const chartType = document.getElementById('chartType').value;
+                    const chartData = prepareChartData(data, chartType);
+                    
+                    createChart(chartData, chartType);
+                    enableExportButtons();
+                    showMessage('Chart generated successfully!', 'success');
+                })
+                .catch(error => {
+                    showMessage(`Error: ${error}`);
+                })
+                .finally(() => {
+                    showLoading(false);
+                });
+        }
+
+        function createChart(data, type) {
+            const canvas = document.getElementById('chartCanvas');
+            const placeholder = document.getElementById('chartPlaceholder');
+            const ctx = canvas.getContext('2d');
+
+            // Destroy existing chart
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            // Show canvas, hide placeholder
+            canvas.style.display = 'block';
+            placeholder.style.display = 'none';
+
+            const title = document.getElementById('chartTitle').value || 'Data Visualization';
+            const animationSpeed = parseInt(document.getElementById('animationSpeed').value);
+            const showGrid = document.getElementById('gridlines').value === 'true';
+
+            const config = {
+                type: type,
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: {
+                        duration: animationSpeed
+                    },
+                    plugins: {
+                        title: {
+                            display: !!title,
+                            text: title,
+                            font: {
+                                size: 18,
+                                weight: 'bold'
+                            }
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                usePointStyle: true
+                            }
+                        }
+                    },
+                    scales: type === 'pie' || type === 'doughnut' || type === 'polarArea' || type === 'radar' ? {} : {
+                        x: {
+                            grid: {
+                                display: showGrid
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: showGrid
+                            },
+                            beginAtZero: true
+                        }
+                    }
+                }
+            };
+
+            // Special configuration for radar charts
+            if (type === 'radar') {
+                config.options.scales = {
+                    r: {
+                        beginAtZero: true,
+                        grid: {
+                            display: showGrid
+                        }
+                    }
+                };
+            }
+
+            currentChart = new Chart(ctx, config);
+        }
+
+        function enableExportButtons() {
+            ['exportPng', 'exportSvg', 'embedBtn', 'printBtn'].forEach(id => {
+                document.getElementById(id).disabled = false;
+            });
+        }
+
+        function exportChart(format) {
+            if (!currentChart) {
+                showMessage('No chart to export!');
+                return;
+            }
+
+            const canvas = document.getElementById('chartCanvas');
+            
+            if (format === 'png') {
+                const link = document.createElement('a');
+                link.download = 'chart.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showMessage('Chart exported as PNG!', 'success');
+            } else if (format === 'svg') {
+                // For SVG export, we'll create a simple fallback
+                showMessage('SVG export: Use PNG format and convert using online tools for SVG output.', 'success');
+            }
+        }
+
+        function copyEmbedCode() {
+            if (!currentChart) {
+                showMessage('No chart to embed!');
+                return;
+            }
+
+            const canvas = document.getElementById('chartCanvas');
+            const dataURL = canvas.toDataURL('image/png');
+            
+            const embedCode = `<img src="${dataURL}" alt="Data Chart" style="max-width: 100%; height: auto;" />`;
+            
+            navigator.clipboard.writeText(embedCode).then(() => {
+                showMessage('Embed code copied to clipboard!', 'success');
+            }).catch(() => {
+                showMessage('Could not copy embed code. Please copy manually.');
+            });
+        }
+
+        function printChart() {
+            if (!currentChart) {
+                showMessage('No chart to print!');
+                return;
+            }
+
+            const canvas = document.getElementById('chartCanvas');
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head><title>Chart Print</title></head>
+                    <body style="text-align: center; margin: 20px;">
+                        <img src="${canvas.toDataURL()}" style="max-width: 100%;" />
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
+        function loadSampleData() {
+            const sampleData = `Product,Q1 Sales,Q2 Sales,Q3 Sales,Q4 Sales
+Laptops,1200,1350,1100,1500
+Smartphones,2000,2200,1800,2400
+Tablets,800,750,900,950
+Headphones,500,600,550,700
+Smartwatches,300,400,450,500`;
+
+            document.getElementById('dataInput').value = sampleData;
+            showMessage('Sample data loaded! Click "Generate Chart" to visualize.', 'success');
+        }
+
+        // Auto-generate chart when chart type changes
+        document.getElementById('chartType').addEventListener('change', () => {
+            if (parsedData) {
+                generateChart();
+            }
+        });
+
+        // Auto-generate chart when color scheme changes
+        document.getElementById('colorScheme').addEventListener('change', () => {
+            if (parsedData) {
+                generateChart();
+            }
+        });
+
+        // Initialize with welcome message
+        window.addEventListener('load', () => {
+            showMessage('Welcome to DataViz Pro! Load your data or try the sample data to get started.', 'success');
+        });
+    </script>
+</body>
+</html>
