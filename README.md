@@ -108,18 +108,3 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 
 ***
-
-## GitHub “About” Section (right sidebar)
-
-You can set this in the repo Settings → General → “Description” and “Website”.
-
-**Description:**
-
-> Turn plain text into simple browser-based charts using pure HTML, CSS, and JavaScript. A collection of lightweight text-to-chart demo pages.
-
-**Website (optional, if you host one of the HTML demos):**
-
-> `https://<your-domain-or-github-pages-url>`  
-
-Do you want the README to include concrete examples of the text input format (e.g., CSV lines, “label:value” style)?
-
