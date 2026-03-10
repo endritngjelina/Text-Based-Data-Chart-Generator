@@ -1,0 +1,2281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataViz Pro - Advanced Chart Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/auto/auto.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-adapter-date-fns/3.0.0/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/regression@2.0.1/dist/regression.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: #333;
+            overflow-x: hidden;
+            transition: background 0.5s ease;
+        }
+
+        body.dark-mode {
+            background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
+            color: #f0f0f0;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255, 118, 117, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(79, 70, 229, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .dark-mode::before {
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(44, 62, 80, 0.4) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(26, 42, 108, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(16, 42, 67, 0.2) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s ease-out;
+            position: relative;
+        }
+
+        .dark-mode .header {
+            color: #e0e0e0;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .theme-toggle:hover {
+            transform: rotate(15deg) scale(1.1);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .control-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 
+                0 25px 50px rgba(0,0,0,0.15),
+                0 0 0 1px rgba(255,255,255,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.4);
+            height: fit-content;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .control-panel {
+            background: rgba(30, 30, 46, 0.95);
+            box-shadow: 
+                0 25px 50px rgba(0,0,0,0.3),
+                0 0 0 1px rgba(60, 60, 80, 0.5),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            border: 1px solid rgba(60, 60, 80, 0.5);
+        }
+
+        .control-panel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(79, 70, 229, 0.5), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .dark-mode .control-panel::before {
+            background: linear-gradient(90deg, transparent, rgba(124, 58, 237, 0.5), transparent);
+        }
+
+        .control-panel:hover::before {
+            opacity: 1;
+        }
+
+        .control-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 35px 70px rgba(0,0,0,0.2),
+                0 0 0 1px rgba(255,255,255,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 
+                0 25px 50px rgba(0,0,0,0.15),
+                0 0 0 1px rgba(255,255,255,0.3),
+                inset 0 1px 0 rgba(255,255,255,0.4);
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .chart-container {
+            background: rgba(30, 30, 46, 0.95);
+            box-shadow: 
+                0 25px 50px rgba(0,0,0,0.3),
+                0 0 0 1px rgba(60, 60, 80, 0.5),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            border: 1px solid rgba(60, 60, 80, 0.5);
+        }
+
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.5), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .chart-container:hover::before {
+            opacity: 1;
+        }
+
+        .chart-container:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 35px 70px rgba(0,0,0,0.2),
+                0 0 0 1px rgba(255,255,255,0.4),
+                inset 0 1px 0 rgba(255,255,255,0.5);
+        }
+
+        .section {
+            margin-bottom: 28px;
+            position: relative;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark-mode .section {
+            background: linear-gradient(135deg, rgba(60, 60, 80, 0.2) 0%, rgba(40, 40, 60, 0.1) 100%);
+            border: 1px solid rgba(80, 80, 100, 0.3);
+        }
+
+        .section:hover {
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%);
+            border-color: rgba(79, 70, 229, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .dark-mode .section:hover {
+            background: linear-gradient(135deg, rgba(70, 70, 90, 0.3) 0%, rgba(50, 50, 70, 0.2) 100%);
+            border-color: rgba(124, 58, 237, 0.3);
+        }
+
+        .section h3 {
+            color: #4f46e5;
+            margin-bottom: 18px;
+            font-size: 1.15rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .dark-mode .section h3 {
+            color: #8b5cf6;
+        }
+
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 13px;
+            box-shadow: 
+                0 4px 8px rgba(79, 70, 229, 0.3),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode .section-icon {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+        }
+
+        .section:hover .section-icon {
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 
+                0 6px 12px rgba(79, 70, 229, 0.4),
+                inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            border: 2px solid rgba(229, 231, 235, 0.6);
+            border-radius: 12px;
+            padding: 16px;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+            font-size: 13px;
+            resize: vertical;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(255, 255, 255, 0.9) 100%);
+            backdrop-filter: blur(10px);
+            line-height: 1.5;
+            color: #374151;
+        }
+
+        .dark-mode textarea {
+            background: rgba(40, 40, 60, 0.8);
+            border-color: rgba(80, 80, 100, 0.6);
+            color: #e0e0e0;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 
+                0 0 0 4px rgba(79, 70, 229, 0.1),
+                0 8px 25px rgba(79, 70, 229, 0.15);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-1px);
+        }
+
+        .dark-mode textarea:focus {
+            border-color: #7c3aed;
+            box-shadow: 
+                0 0 0 4px rgba(124, 58, 237, 0.2),
+                0 8px 25px rgba(124, 58, 237, 0.25);
+            background: rgba(50, 50, 70, 0.95);
+        }
+
+        textarea::placeholder {
+            color: #9ca3af;
+            font-style: italic;
+        }
+
+        .dark-mode textarea::placeholder {
+            color: #a0a0c0;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .dark-mode label {
+            color: #d0d0e0;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .dark-mode select, 
+        .dark-mode input {
+            background: rgba(40, 40, 60, 0.8);
+            border-color: rgba(80, 80, 100, 0.6);
+            color: #e0e0e0;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .dark-mode select:focus, 
+        .dark-mode input:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.2);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+            box-shadow: 
+                0 4px 12px rgba(79, 70, 229, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .btn {
+            box-shadow: 
+                0 4px 12px rgba(79, 70, 229, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 
+                0 8px 25px rgba(79, 70, 229, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-mode .btn:hover {
+            box-shadow: 
+                0 8px 25px rgba(79, 70, 229, 0.5),
+                inset 0 1px 0 rgba(255, 255, 255, 0.15);
+        }
+
+        .btn:active {
+            transform: translateY(-1px) scale(1.01);
+            box-shadow: 
+                0 4px 12px rgba(79, 70, 229, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            box-shadow: 
+                0 4px 12px rgba(107, 114, 128, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .dark-mode .btn-secondary {
+            background: linear-gradient(135deg, #5a6268 0%, #3d444b 100%);
+        }
+
+        .btn-secondary:hover {
+            box-shadow: 
+                0 8px 25px rgba(107, 114, 128, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            box-shadow: 
+                0 4px 12px rgba(16, 185, 129, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-success:hover {
+            box-shadow: 
+                0 8px 25px rgba(16, 185, 129, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 
+                0 4px 12px rgba(245, 158, 11, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-warning:hover {
+            box-shadow: 
+                0 8px 25px rgba(245, 158, 11, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-ai {
+            background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+            box-shadow: 
+                0 4px 12px rgba(139, 92, 246, 0.3),
+                inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        }
+
+        .btn-ai:hover {
+            box-shadow: 
+                0 8px 25px rgba(139, 92, 246, 0.4),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 500px;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 
+                inset 0 1px 0 rgba(255, 255, 255, 0.4),
+                0 8px 32px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark-mode .chart-wrapper {
+            background: linear-gradient(135deg, rgba(30, 30, 46, 0.95) 0%, rgba(25, 25, 40, 0.9) 100%);
+            box-shadow: 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 8px 32px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(60, 60, 80, 0.5);
+        }
+
+        .chart-wrapper:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                inset 0 1px 0 rgba(255, 255, 255, 0.5),
+                0 12px 40px rgba(0, 0, 0, 0.12);
+        }
+
+        .dark-mode .chart-wrapper:hover {
+            box-shadow: 
+                inset 0 1px 0 rgba(255, 255, 255, 0.1),
+                0 12px 40px rgba(0, 0, 0, 0.25);
+        }
+
+        .sample-data {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode .sample-data {
+            background: rgba(40, 40, 60, 0.8);
+            border: 1px solid rgba(80, 80, 100, 0.6);
+        }
+
+        .sample-data:hover {
+            background: #e2e8f0;
+        }
+
+        .dark-mode .sample-data:hover {
+            background: rgba(60, 60, 80, 0.9);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.8) 100%);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .dark-mode .stat-card {
+            background: linear-gradient(135deg, rgba(40, 40, 60, 0.9) 0%, rgba(35, 35, 55, 0.8) 100%);
+            border: 1px solid rgba(80, 80, 100, 0.4);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed, #06b6d4);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .dark-mode .stat-card::before {
+            background: linear-gradient(90deg, #7c3aed, #8b5cf6, #0ea5e9);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(79, 70, 229, 0.15);
+            border-color: rgba(79, 70, 229, 0.2);
+        }
+
+        .dark-mode .stat-card:hover {
+            box-shadow: 0 12px 40px rgba(79, 70, 229, 0.25);
+            border-color: rgba(124, 58, 237, 0.3);
+        }
+
+        .stat-card:hover::before {
+            opacity: 1;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .dark-mode .stat-value {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #6b7280;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dark-mode .stat-label {
+            color: #a0a0c0;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+            padding: 16px;
+            background: linear-gradient(135deg, rgba(248, 250, 252, 0.5) 0%, rgba(255, 255, 255, 0.3) 100%);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-mode .color-palette {
+            background: linear-gradient(135deg, rgba(40, 40, 60, 0.5) 0%, rgba(35, 35, 55, 0.3) 100%);
+            border: 1px solid rgba(80, 80, 100, 0.4);
+        }
+
+        .color-option {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .color-option::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            padding: 2px;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask-composite: exclude;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .color-option:hover, .color-option.active {
+            border-color: rgba(79, 70, 229, 0.6);
+            transform: scale(1.15) translateY(-2px);
+            box-shadow: 
+                0 8px 25px rgba(79, 70, 229, 0.3),
+                0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .dark-mode .color-option:hover, 
+        .dark-mode .color-option.active {
+            border-color: rgba(124, 58, 237, 0.6);
+            box-shadow: 
+                0 8px 25px rgba(124, 58, 237, 0.3),
+                0 0 0 4px rgba(124, 58, 237, 0.1);
+        }
+
+        .color-option.active {
+            border-color: #4f46e5;
+            box-shadow: 
+                0 8px 25px rgba(79, 70, 229, 0.4),
+                0 0 0 4px rgba(79, 70, 229, 0.15);
+        }
+
+        .dark-mode .color-option.active {
+            border-color: #7c3aed;
+            box-shadow: 
+                0 8px 25px rgba(124, 58, 237, 0.4),
+                0 0 0 4px rgba(124, 58, 237, 0.15);
+        }
+
+        .export-options {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .notification {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            padding: 16px 24px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            border-radius: 12px;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideInRight 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 20px 40px rgba(16, 185, 129, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+            max-width: 350px;
+        }
+
+        .notification.error {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            box-shadow: 
+                0 20px 40px rgba(239, 68, 68, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .notification.warning {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            box-shadow: 
+                0 20px 40px rgba(245, 158, 11, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .notification.info {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            box-shadow: 
+                0 20px 40px rgba(14, 165, 233, 0.3),
+                0 0 0 1px rgba(255, 255, 255, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 48px;
+            color: #6b7280;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(248, 250, 252, 0.05) 100%);
+            border-radius: 16px;
+            backdrop-filter: blur(10px);
+        }
+
+        .dark-mode .loading {
+            background: linear-gradient(135deg, rgba(40, 40, 60, 0.1) 0%, rgba(35, 35, 55, 0.05) 100%);
+            color: #a0a0c0;
+        }
+
+        .spinner {
+            border: 3px solid rgba(79, 70, 229, 0.1);
+            border-top: 3px solid #4f46e5;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        .dark-mode .spinner {
+            border: 3px solid rgba(124, 58, 237, 0.1);
+            border-top: 3px solid #8b5cf6;
+        }
+
+        .loading p {
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .advanced-controls {
+            background: linear-gradient(135deg, rgba(248, 250, 252, 0.6) 0%, rgba(255, 255, 255, 0.4) 100%);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 18px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .dark-mode .advanced-controls {
+            background: linear-gradient(135deg, rgba(40, 40, 60, 0.6) 0%, rgba(35, 35, 55, 0.4) 100%);
+            border: 1px solid rgba(80, 80, 100, 0.4);
+        }
+
+        .advanced-controls:hover {
+            background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(255, 255, 255, 0.6) 100%);
+            border-color: rgba(79, 70, 229, 0.2);
+        }
+
+        .dark-mode .advanced-controls:hover {
+            background: linear-gradient(135deg, rgba(50, 50, 70, 0.8) 0%, rgba(45, 45, 65, 0.6) 100%);
+            border-color: rgba(124, 58, 237, 0.3);
+        }
+
+        .advanced-controls h4 {
+            margin-bottom: 16px;
+            color: #4f46e5;
+            font-weight: 700;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dark-mode .advanced-controls h4 {
+            color: #8b5cf6;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-top: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .dark-mode .checkbox-item {
+            color: #e0e0e0;
+        }
+
+        .checkbox-item:hover {
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .dark-mode .checkbox-item:hover {
+            background: rgba(124, 58, 237, 0.05);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            border: 2px solid #d1d5db;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            appearance: none;
+        }
+
+        .dark-mode .checkbox-item input[type="checkbox"] {
+            background: rgba(40, 40, 60, 0.8);
+            border-color: #6b7280;
+        }
+
+        .checkbox-item input[type="checkbox"]:checked {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-color: #4f46e5;
+        }
+
+        .dark-mode .checkbox-item input[type="checkbox"]:checked {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+            border-color: #7c3aed;
+        }
+
+        .checkbox-item input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+            color: #4b5563;
+        }
+
+        .dark-mode .checkbox-item label {
+            color: #d0d0e0;
+        }
+
+        .ai-suggestion {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(236, 72, 153, 0.05) 100%);
+            border-left: 3px solid #8b5cf6;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .dark-mode .ai-suggestion {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%);
+            border-left: 3px solid #8b5cf6;
+        }
+
+        .ai-suggestion h4 {
+            color: #8b5cf6;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-suggestion p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .dark-mode .ai-suggestion p {
+            color: #e0e0e0;
+        }
+
+        .prediction-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(5, 150, 105, 0.05) 100%);
+            border-left: 3px solid #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .dark-mode .prediction-card {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.1) 100%);
+            border-left: 3px solid #10b981;
+        }
+
+        .prediction-card h4 {
+            color: #10b981;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .prediction-card p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .dark-mode .prediction-card p {
+            color: #e0e0e0;
+        }
+
+        .collaboration {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(2, 132, 199, 0.05) 100%);
+            border-left: 3px solid #0ea5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+
+        .dark-mode .collaboration {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.15) 0%, rgba(2, 132, 199, 0.1) 100%);
+            border-left: 3px solid #0ea5e9;
+        }
+
+        .collaboration h4 {
+            color: #0ea5e9;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .collaboration input {
+            margin-top: 10px;
+        }
+
+        .collaboration .btn {
+            margin-top: 10px;
+        }
+
+        @keyframes fadeInDown {
+            from { 
+                opacity: 0; 
+                transform: translateY(-40px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(40px) scale(0.95); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1); 
+            }
+        }
+
+        @keyframes slideInRight {
+            from { 
+                transform: translateX(100%) scale(0.9); 
+                opacity: 0;
+            }
+            to { 
+                transform: translateX(0) scale(1); 
+                opacity: 1;
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(79, 70, 229, 0.3); }
+            50% { box-shadow: 0 0 30px rgba(79, 70, 229, 0.5); }
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .header p {
+                font-size: 1rem;
+            }
+            
+            .container {
+                padding: 16px;
+            }
+
+            .control-panel, .chart-container {
+                padding: 24px;
+                border-radius: 20px;
+            }
+
+            .checkbox-group {
+                grid-template-columns: 1fr;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+
+            .export-options {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+                margin-right: 0;
+            }
+
+            .color-palette {
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .control-panel, .chart-container {
+                padding: 20px;
+                border-radius: 16px;
+            }
+
+            .chart-wrapper {
+                height: 400px;
+                padding: 16px;
+            }
+
+            .notification {
+                right: 16px;
+                top: 16px;
+                left: 16px;
+                max-width: none;
+            }
+        }
+
+        /* Enhanced focus states for accessibility */
+        button:focus-visible, 
+        input:focus-visible, 
+        select:focus-visible, 
+        textarea:focus-visible {
+            outline: 2px solid #4f46e5;
+            outline-offset: 2px;
+        }
+
+        .dark-mode button:focus-visible, 
+        .dark-mode input:focus-visible, 
+        .dark-mode select:focus-visible, 
+        .dark-mode textarea:focus-visible {
+            outline: 2px solid #7c3aed;
+        }
+
+        /* Smooth transitions for theme changes */
+        * {
+            transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Loading skeleton animation */
+        .skeleton {
+            background: linear-gradient(90deg, 
+                rgba(229, 231, 235, 0.4) 25%, 
+                rgba(229, 231, 235, 0.8) 50%, 
+                rgba(229, 231, 235, 0.4) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-loading 1.5s infinite;
+        }
+
+        @keyframes skeleton-loading {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Enhanced scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(243, 244, 246, 0.3);
+            border-radius: 4px;
+        }
+
+        .dark-mode ::-webkit-scrollbar-track {
+            background: rgba(40, 40, 60, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .dark-mode ::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #4338ca, #6d28d9);
+        }
+
+        .dark-mode ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #6d28d9, #5b21b6);
+        }
+
+        /* Selection styling */
+        ::selection {
+            background: rgba(79, 70, 229, 0.2);
+            color: #1f2937;
+        }
+
+        .dark-mode ::selection {
+            background: rgba(124, 58, 237, 0.3);
+            color: #e0e0e0;
+        }
+
+        /* Enhanced micro-interactions */
+        .micro-bounce {
+            animation: micro-bounce 0.6s ease;
+        }
+
+        @keyframes micro-bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+
+        .data-preview {
+            max-height: 220px;
+            overflow-y: auto;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+            border: 1px solid rgba(229, 231, 235, 0.6);
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 16px;
+            backdrop-filter: blur(10px);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode .data-preview {
+            background: linear-gradient(135deg, rgba(30, 30, 46, 0.95) 0%, rgba(25, 25, 40, 0.9) 100%);
+            border: 1px solid rgba(80, 80, 100, 0.6);
+        }
+
+        .data-preview:hover {
+            border-color: rgba(79, 70, 229, 0.3);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .dark-mode .data-preview:hover {
+            border-color: rgba(124, 58, 237, 0.4);
+        }
+
+        .data-preview::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .data-preview::-webkit-scrollbar-track {
+            background: rgba(243, 244, 246, 0.5);
+            border-radius: 3px;
+        }
+
+        .dark-mode .data-preview::-webkit-scrollbar-track {
+            background: rgba(40, 40, 60, 0.5);
+        }
+
+        .data-preview::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            border-radius: 3px;
+        }
+
+        .dark-mode .data-preview::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #7c3aed, #5b21b6);
+        }
+
+        .data-preview::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #4338ca, #6d28d9);
+        }
+
+        .dark-mode .data-preview::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #6d28d9, #5b21b6);
+        }
+
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+        }
+
+        .preview-table th,
+        .preview-table td {
+            border: 1px solid rgba(229, 231, 235, 0.5);
+            padding: 8px 12px;
+            text-align: left;
+            transition: all 0.3s ease;
+        }
+
+        .dark-mode .preview-table th,
+        .dark-mode .preview-table td {
+            border: 1px solid rgba(80, 80, 100, 0.5);
+        }
+
+        .preview-table th {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.1) 0%, rgba(124, 58, 237, 0.05) 100%);
+            font-weight: 700;
+            color: #4f46e5;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 11px;
+        }
+
+        .dark-mode .preview-table th {
+            background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(91, 33, 182, 0.1) 100%);
+            color: #8b5cf6;
+        }
+
+        .preview-table td {
+            color: #374151;
+        }
+
+        .dark-mode .preview-table td {
+            color: #e0e0e0;
+        }
+
+        .preview-table tr:hover {
+            background: rgba(79, 70, 229, 0.03);
+        }
+
+        .dark-mode .preview-table tr:hover {
+            background: rgba(124, 58, 237, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>DataViz Pro</h1>
+            <p>Professional-Grade Chart Generation Platform</p>
+            <div class="theme-toggle" id="themeToggle">
+                <i class="fas fa-moon"></i>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="control-panel">
+                <div class="section">
+                    <h3><div class="section-icon">📊</div>Data Input</h3>
+                    <textarea id="dataInput" placeholder="Paste your CSV, TSV, or tab-separated data here...
+
+Example:
+Month,Sales,Profit
+Jan,1200,300
+Feb,1900,450
+Mar,800,200"></textarea>
+                    
+                    <div class="form-group">
+                        <label>Delimiter:</label>
+                        <select id="delimiter">
+                            <option value="auto">Auto-detect</option>
+                            <option value=",">Comma (,)</option>
+                            <option value="\t">Tab</option>
+                            <option value=";">Semicolon (;)</option>
+                            <option value="|">Pipe (|)</option>
+                        </select>
+                    </div>
+
+                    <button class="btn btn-secondary" onclick="loadSampleData()">📋 Load Sample Data</button>
+                    <button class="btn" onclick="parseData()">🔄 Parse Data</button>
+                    <button class="btn btn-ai" onclick="analyzeData()">🤖 AI Analysis</button>
+
+                    <div id="dataPreview" class="data-preview" style="display: none;"></div>
+                    
+                    <div id="aiSuggestion" class="ai-suggestion">
+                        <h4><i class="fas fa-robot"></i> AI Suggestion</h4>
+                        <p id="suggestionText">Based on your data, we recommend a bar chart to compare values across categories.</p>
+                    </div>
+                    
+                    <div id="predictionCard" class="prediction-card">
+                        <h4><i class="fas fa-crystal-ball"></i> Predictive Insight</h4>
+                        <p id="predictionText">Based on current trends, next month's sales are predicted to be $15,200.</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3><div class="section-icon">📈</div>Chart Configuration</h3>
+                    <div class="form-group">
+                        <label>Chart Type:</label>
+                        <select id="chartType">
+                            <option value="line">Line Chart</option>
+                            <option value="bar">Bar Chart</option>
+                            <option value="horizontalBar">Horizontal Bar</option>
+                            <option value="pie">Pie Chart</option>
+                            <option value="doughnut">Doughnut Chart</option>
+                            <option value="radar">Radar Chart</option>
+                            <option value="polarArea">Polar Area</option>
+                            <option value="scatter">Scatter Plot</option>
+                            <option value="bubble">Bubble Chart</option>
+                            <option value="stackedBar">Stacked Bar</option>
+                            <option value="area">Area Chart</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>X-Axis Column:</label>
+                        <select id="xAxis"></select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Y-Axis Columns:</label>
+                        <select id="yAxis" multiple></select>
+                        <small>Hold Ctrl/Cmd to select multiple</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Chart Title:</label>
+                        <input type="text" id="chartTitle" placeholder="Enter chart title">
+                    </div>
+                    
+                    <div class="advanced-controls">
+                        <h4 style="margin-bottom: 10px; color: #4f46e5;">Advanced Options</h4>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showTrend" checked>
+                                <label for="showTrend">Show Trend Line</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showPrediction" checked>
+                                <label for="showPrediction">Show Prediction</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3><div class="section-icon">🎨</div>Styling</h3>
+                    <div class="form-group">
+                        <label>Color Scheme:</label>
+                        <div class="color-palette">
+                            <div class="color-option active" data-palette="default" style="background: linear-gradient(45deg, #4f46e5, #7c3aed)"></div>
+                            <div class="color-option" data-palette="ocean" style="background: linear-gradient(45deg, #0ea5e9, #06b6d4)"></div>
+                            <div class="color-option" data-palette="forest" style="background: linear-gradient(45deg, #10b981, #059669)"></div>
+                            <div class="color-option" data-palette="sunset" style="background: linear-gradient(45deg, #f59e0b, #dc2626)"></div>
+                            <div class="color-option" data-palette="purple" style="background: linear-gradient(45deg, #8b5cf6, #a855f7)"></div>
+                            <div class="color-option" data-palette="pink" style="background: linear-gradient(45deg, #ec4899, #f43f5e)"></div>
+                        </div>
+                    </div>
+
+                    <div class="advanced-controls">
+                        <h4 style="margin-bottom: 10px; color: #4f46e5;">Display Options</h4>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showGrid" checked>
+                                <label for="showGrid">Show Grid</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showLegend" checked>
+                                <label for="showLegend">Show Legend</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="showTooltips" checked>
+                                <label for="showTooltips">Show Tooltips</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="animate" checked>
+                                <label for="animate">Animations</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="section collaboration">
+                    <h3><div class="section-icon">👥</div>Collaboration</h3>
+                    <div class="form-group">
+                        <label>Shareable Link:</label>
+                        <input type="text" id="shareLink" readonly placeholder="Generate link to share">
+                    </div>
+                    <button class="btn" onclick="generateShareLink()">🔗 Generate Share Link</button>
+                    <button class="btn btn-secondary" onclick="copyShareLink()">📋 Copy Link</button>
+                </div>
+
+                <div class="section">
+                    <h3><div class="section-icon">💾</div>Export Options</h3>
+                    <div class="export-options">
+                        <button class="btn btn-success" onclick="downloadSVG()">📥 Download SVG</button>
+                        <button class="btn btn-success" onclick="downloadPNG()">📥 Download PNG</button>
+                        <button class="btn btn-success" onclick="downloadPDF()">📥 Download PDF</button>
+                        <button class="btn btn-warning" onclick="generateIframe()">🔗 Get Embed Code</button>
+                        <button class="btn btn-secondary" onclick="shareChart()">📤 Share Chart</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <div class="stats-grid" id="statsGrid" style="display: none;">
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalRows">0</div>
+                        <div class="stat-label">Data Points</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalColumns">0</div>
+                        <div class="stat-label">Columns</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="chartTypeDisplay">-</div>
+                        <div class="stat-label">Chart Type</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="dataQuality">100%</div>
+                        <div class="stat-label">Data Quality</div>
+                    </div>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing your data...</p>
+                </div>
+
+                <div class="chart-wrapper">
+                    <canvas id="chart"></canvas>
+                </div>
+
+                <div id="embedCode" style="display: none; margin-top: 20px;">
+                    <h4 style="color: #4f46e5; margin-bottom: 10px;">Embed Code:</h4>
+                    <textarea id="iframeCode" readonly style="min-height: 80px; font-family: monospace; font-size: 12px;"></textarea>
+                    <button class="btn" onclick="copyToClipboard()">📋 Copy Code</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentChart = null;
+        let parsedData = null;
+        let currentPalette = 'default';
+        let shareToken = null;
+        let aiSuggestions = {
+            chartType: 'bar',
+            reasoning: 'Based on your data, we recommend a bar chart to compare values across categories.'
+        };
+
+        const colorPalettes = {
+            default: ['#4f46e5', '#7c3aed', '#06b6d4', '#10b981', '#f59e0b', '#ef4444'],
+            ocean: ['#0ea5e9', '#06b6d4', '#0891b2', '#0e7490', '#155e75', '#164e63'],
+            forest: ['#10b981', '#059669', '#047857', '#065f46', '#064e3b', '#042f2e'],
+            sunset: ['#f59e0b', '#dc2626', '#ea580c', '#c2410c', '#9a3412', '#7c2d12'],
+            purple: ['#8b5cf6', '#a855f7', '#9333ea', '#7c3aed', '#6d28d9', '#5b21b6'],
+            pink: ['#ec4899', '#f43f5e', '#e11d48', '#be185d', '#9d174d', '#831843']
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            loadSampleData();
+            checkUrlForSharedData();
+        });
+
+        function setupEventListeners() {
+            document.getElementById('dataInput').addEventListener('input', debounce(parseData, 500));
+            document.getElementById('chartType').addEventListener('change', updateChart);
+            document.getElementById('xAxis').addEventListener('change', updateChart);
+            document.getElementById('yAxis').addEventListener('change', updateChart);
+            document.getElementById('chartTitle').addEventListener('input', updateChart);
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+            
+            // Advanced options
+            document.getElementById('showGrid').addEventListener('change', updateChart);
+            document.getElementById('showLegend').addEventListener('change', updateChart);
+            document.getElementById('showTooltips').addEventListener('change', updateChart);
+            document.getElementById('animate').addEventListener('change', updateChart);
+            document.getElementById('showTrend').addEventListener('change', updateChart);
+            document.getElementById('showPrediction').addEventListener('change', updateChart);
+
+            // Color palette selection
+            document.querySelectorAll('.color-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.color-option').forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    currentPalette = this.dataset.palette;
+                    updateChart();
+                });
+            });
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const icon = document.querySelector('#themeToggle i');
+            if (document.body.classList.contains('dark-mode')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+            updateChart();
+        }
+
+        function loadSampleData() {
+            const sampleData = `Month,Sales,Profit,Expenses
+January,12000,3500,8500
+February,15000,4200,10800
+March,18000,5100,12900
+April,14000,3800,10200
+May,20000,6000,14000
+June,22000,6800,15200
+July,25000,7500,17500
+August,23000,7000,16000
+September,19000,5700,13300
+October,21000,6300,14700
+November,24000,7200,16800
+December,28000,8500,19500`;
+
+            document.getElementById('dataInput').value = sampleData;
+            parseData();
+        }
+
+        function parseData() {
+            const input = document.getElementById('dataInput').value.trim();
+            if (!input) return;
+
+            showLoading(true);
+
+            setTimeout(() => {
+                try {
+                    const delimiter = document.getElementById('delimiter').value;
+                    const config = {
+                        header: true,
+                        skipEmptyLines: true,
+                        dynamicTyping: true
+                    };
+
+                    if (delimiter !== 'auto') {
+                        config.delimiter = delimiter === '\\t' ? '\t' : delimiter;
+                    }
+
+                    const result = Papa.parse(input, config);
+                    
+                    if (result.errors.length > 0) {
+                        throw new Error('Parsing error: ' + result.errors[0].message);
+                    }
+
+                    parsedData = result.data;
+                    updateColumnSelectors();
+                    updateDataPreview();
+                    updateStats();
+                    updateChart();
+                    
+                    showNotification('Data parsed successfully!');
+                } catch (error) {
+                    showNotification('Error parsing data: ' + error.message, 'error');
+                } finally {
+                    showLoading(false);
+                }
+            }, 300);
+        }
+
+        function analyzeData() {
+            if (!parsedData || parsedData.length === 0) {
+                showNotification('Please parse data first!', 'warning');
+                return;
+            }
+
+            showNotification('Analyzing data with AI...', 'info');
+            
+            // Simulate AI analysis
+            setTimeout(() => {
+                const columns = Object.keys(parsedData[0]);
+                const numericColumns = columns.filter(col => {
+                    return parsedData.some(row => typeof row[col] === 'number');
+                });
+                
+                const nonNumericColumns = columns.filter(col => {
+                    return parsedData.some(row => typeof row[col] !== 'number');
+                });
+                
+                // Simple AI logic for demonstration
+                if (nonNumericColumns.length >= 1 && numericColumns.length >= 2) {
+                    aiSuggestions = {
+                        chartType: 'line',
+                        reasoning: 'Multiple numeric values over time/categories detected. Line chart recommended to show trends.'
+                    };
+                } else if (nonNumericColumns.length >= 1 && numericColumns.length === 1) {
+                    aiSuggestions = {
+                        chartType: 'bar',
+                        reasoning: 'Single numeric value to compare across categories. Bar chart recommended for comparison.'
+                    };
+                } else if (numericColumns.length === 1 && nonNumericColumns.length === 0) {
+                    aiSuggestions = {
+                        chartType: 'pie',
+                        reasoning: 'Single numeric value with no categories. Pie chart recommended to show distribution.'
+                    };
+                } else {
+                    aiSuggestions = {
+                        chartType: 'bar',
+                        reasoning: 'Based on your data structure, a bar chart is recommended.'
+                    };
+                }
+                
+                // Update UI with AI suggestions
+                document.getElementById('suggestionText').textContent = aiSuggestions.reasoning;
+                document.getElementById('aiSuggestion').style.display = 'block';
+                
+                // Set the chart type to AI suggestion
+                document.getElementById('chartType').value = aiSuggestions.chartType;
+                
+                // Generate prediction
+                if (parsedData.length > 3 && numericColumns.length > 0) {
+                    const lastValue = parsedData[parsedData.length - 1][numericColumns[0]];
+                    const prediction = lastValue * 1.1; // Simple prediction: 10% growth
+                    document.getElementById('predictionText').textContent = 
+                        `Based on current trends, next value for ${numericColumns[0]} is predicted to be ${prediction.toLocaleString()}.`;
+                    document.getElementById('predictionCard').style.display = 'block';
+                }
+                
+                updateChart();
+                showNotification('AI analysis complete! Chart updated with recommendations.');
+            }, 1500);
+        }
+
+        function updateColumnSelectors() {
+            if (!parsedData || parsedData.length === 0) return;
+
+            const columns = Object.keys(parsedData[0]);
+            const xAxisSelect = document.getElementById('xAxis');
+            const yAxisSelect = document.getElementById('yAxis');
+
+            // Clear existing options
+            xAxisSelect.innerHTML = '';
+            yAxisSelect.innerHTML = '';
+
+            columns.forEach(column => {
+                const xOption = new Option(column, column);
+                const yOption = new Option(column, column);
+                xAxisSelect.add(xOption);
+                yAxisSelect.add(yOption);
+            });
+
+            // Set defaults
+            if (columns.length > 0) {
+                xAxisSelect.value = columns[0];
+                if (columns.length > 1) {
+                    yAxisSelect.options[1].selected = true;
+                }
+            }
+        }
+
+        function updateDataPreview() {
+            if (!parsedData || parsedData.length === 0) return;
+
+            const preview = document.getElementById('dataPreview');
+            const columns = Object.keys(parsedData[0]);
+            
+            let html = '<table class="preview-table"><thead><tr>';
+            columns.forEach(col => html += `<th>${col}</th>`);
+            html += '</tr></thead><tbody>';
+
+            // Show first 5 rows
+            parsedData.slice(0, 5).forEach(row => {
+                html += '<tr>';
+                columns.forEach(col => html += `<td>${row[col] || ''}</td>`);
+                html += '</tr>';
+            });
+
+            if (parsedData.length > 5) {
+                html += `<tr><td colspan="${columns.length}" style="text-align: center; font-style: italic; color: #6b7280;">... and ${parsedData.length - 5} more rows</td></tr>`;
+            }
+
+            html += '</tbody></table>';
+            preview.innerHTML = html;
+            preview.style.display = 'block';
+        }
+
+        function updateStats() {
+            if (!parsedData) return;
+
+            document.getElementById('totalRows').textContent = parsedData.length;
+            document.getElementById('totalColumns').textContent = Object.keys(parsedData[0] || {}).length;
+            document.getElementById('chartTypeDisplay').textContent = document.getElementById('chartType').selectedOptions[0].text;
+            
+            // Calculate data quality (simple demo)
+            let missingValues = 0;
+            let totalValues = 0;
+            
+            parsedData.forEach(row => {
+                Object.values(row).forEach(val => {
+                    totalValues++;
+                    if (val === null || val === undefined || val === '') {
+                        missingValues++;
+                    }
+                });
+            });
+            
+            const quality = totalValues > 0 
+  ? Math.round((1 - (missingValues / totalValues)) * 100) 
+  : 100;
+            document.getElementById('dataQuality').textContent = `${quality}%`;
+            
+            document.getElementById('statsGrid').style.display = 'grid';
+        }
+
+        function updateChart() {
+            if (!parsedData || parsedData.length === 0) return;
+
+            const chartType = document.getElementById('chartType').value;
+            const xAxis = document.getElementById('xAxis').value;
+            const yAxisSelected = Array.from(document.getElementById('yAxis').selectedOptions).map(option => option.value);
+            const title = document.getElementById('chartTitle').value || 'Data Visualization';
+            const showTrend = document.getElementById('showTrend').checked;
+            const showPrediction = document.getElementById('showPrediction').checked;
+
+            if (!xAxis || yAxisSelected.length === 0) return;
+
+            // Destroy existing chart
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            const ctx = document.getElementById('chart').getContext('2d');
+            const colors = colorPalettes[currentPalette];
+
+            // Prepare data based on chart type
+            let chartData;
+            let chartOptions;
+
+            if (['pie', 'doughnut', 'polarArea'].includes(chartType)) {
+                // For pie charts, use first y-axis column
+                const values = parsedData.map(row => row[yAxisSelected[0]]);
+                const labels = parsedData.map(row => row[xAxis]);
+
+                chartData = {
+                    labels: labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: colors,
+                        borderColor: colors.map(color => color + '80'),
+                        borderWidth: 2
+                    }]
+                };
+            } else {
+                // For other chart types
+                const labels = parsedData.map(row => row[xAxis]);
+                const datasets = yAxisSelected.map((column, index) => {
+                    const values = parsedData.map(row => row[column]);
+                    
+                    // Create dataset
+                    const dataset = {
+                        label: column,
+                        data: values,
+                        backgroundColor: colors[index % colors.length] + '20',
+                        borderColor: colors[index % colors.length],
+                        borderWidth: 2,
+                        fill: chartType === 'line' || chartType === 'area' ? false : true,
+                        tension: chartType === 'line' || chartType === 'area' ? 0.4 : 0
+                    };
+                    
+                    // For area charts
+                    if (chartType === 'area') {
+                        dataset.fill = true;
+                        dataset.backgroundColor = colors[index % colors.length] + '60';
+                    }
+                    
+                    // For stacked bar charts
+                    if (chartType === 'stackedBar') {
+                        dataset.stack = 'stack';
+                    }
+                    
+                    return dataset;
+                });
+
+                // Add trend line if enabled
+                if (showTrend && yAxisSelected.length > 0) {
+                    const trendDataset = createTrendDataset(parsedData, xAxis, yAxisSelected[0], colors[0]);
+                    datasets.push(trendDataset);
+                }
+                
+                // Add prediction if enabled
+                if (showPrediction && yAxisSelected.length > 0) {
+                    const predictionDataset = createPredictionDataset(parsedData, xAxis, yAxisSelected[0], colors[colors.length - 1]);
+                    datasets.push(predictionDataset);
+                }
+
+                chartData = { labels, datasets };
+            }
+
+            // Chart options
+            chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: title,
+                        font: { size: 18, weight: 'bold' },
+                        color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#374151'
+                    },
+                    legend: {
+                        display: document.getElementById('showLegend').checked,
+                        position: 'top',
+                        labels: {
+                            color: document.body.classList.contains('dark-mode') ? '#e0e0e0' : '#374151'
+                        }
+                    },
+                    tooltip: {
+                        enabled: document.getElementById('showTooltips').checked,
+                        mode: 'index',
+                        intersect: false,
+                        backgroundColor: document.body.classList.contains('dark-mode') ? 'rgba(30, 30, 46, 0.9)' : 'rgba(0, 0, 0, 0.8)',
+                        titleColor: 'white',
+                        bodyColor: 'white',
+                        borderColor: colors[0],
+                        borderWidth: 1
+                    }
+                },
+                scales: ['pie', 'doughnut', 'polarArea', 'radar'].includes(chartType) ? {} : {
+                    x: {
+                        display: true,
+                        grid: {
+                            display: document.getElementById('showGrid').checked,
+                            color: document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: { 
+                            color: document.body.classList.contains('dark-mode') ? '#a0a0c0' : '#6b7280'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        grid: {
+                            display: document.getElementById('showGrid').checked,
+                            color: document.body.classList.contains('dark-mode') ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: { 
+                            color: document.body.classList.contains('dark-mode') ? '#a0a0c0' : '#6b7280'
+                        },
+                        stacked: chartType === 'stackedBar'
+                    }
+                },
+                animation: {
+                    duration: document.getElementById('animate').checked ? 1000 : 0,
+                    easing: 'easeOutQuart'
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            };
+
+            // Handle horizontal bar charts
+            let finalChartType = chartType;
+            if (chartType === 'horizontalBar') {
+                finalChartType = 'bar';
+                chartOptions.indexAxis = 'y';
+            }
+
+            currentChart = new Chart(ctx, {
+                type: finalChartType,
+                data: chartData,
+                options: chartOptions
+            });
+
+            updateStats();
+        }
+
+        function createTrendDataset(data, xAxis, yAxis, color) {
+            // Convert data to regression format
+            const points = data.map((row, index) => [index, row[yAxis]]);
+            
+            // Perform linear regression
+            const result = regression.linear(points);
+            
+            // Create trend line data
+            const trendData = data.map((row, index) => result.predict(index)[1]);
+            
+            return {
+                label: `${yAxis} Trend`,
+                data: trendData,
+                borderColor: color,
+                borderWidth: 2,
+                borderDash: [5, 5],
+                fill: false,
+                pointRadius: 0,
+                pointHoverRadius: 0,
+                type: 'line'
+            };
+        }
+        
+        function createPredictionDataset(data, xAxis, yAxis, color) {
+            // Only predict if we have enough data
+            if (data.length < 3) return null;
+            
+            // Convert data to regression format
+            const points = data.map((row, index) => [index, row[yAxis]]);
+            
+            // Perform linear regression
+            const result = regression.linear(points);
+            
+            // Create prediction for next point
+            const nextIndex = data.length;
+            const nextValue = result.predict(nextIndex)[1];
+            
+            // Create dataset with existing data and prediction
+            const predictionData = [...data.map(row => row[yAxis]), nextValue];
+            
+            // Create labels with prediction
+            const labels = [...data.map(row => row[xAxis]), 'Next'];
+            
+            return {
+                label: `${yAxis} Prediction`,
+                data: predictionData,
+                backgroundColor: color + '40',
+                borderColor: color,
+                borderWidth: 2,
+                pointBackgroundColor: [...Array(data.length).fill('transparent'), color],
+                pointBorderColor: [...Array(data.length).fill('transparent'), color],
+                pointRadius: [...Array(data.length).fill(0), 5],
+                type: 'line'
+            };
+        }
+
+        function downloadSVG() {
+            if (!currentChart) {
+                showNotification('No chart to export!', 'error');
+                return;
+            }
+
+            // Convert canvas to SVG (simplified approach)
+            const canvas = document.getElementById('chart');
+            const dataURL = canvas.toDataURL('image/png');
+            
+            // Create SVG wrapper
+            const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${canvas.width}" height="${canvas.height}">
+                <image href="${dataURL}" width="${canvas.width}" height="${canvas.height}"/>
+            </svg>`;
+            
+            downloadFile(svg, 'chart.svg', 'image/svg+xml');
+            showNotification('SVG downloaded successfully!');
+        }
+
+        function downloadPNG() {
+            if (!currentChart) {
+                showNotification('No chart to export!', 'error');
+                return;
+            }
+
+            const canvas = document.getElementById('chart');
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'chart.png';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                showNotification('PNG downloaded successfully!');
+            });
+        }
+        
+        function downloadPDF() {
+            if (!currentChart) {
+                showNotification('No chart to export!', 'error');
+                return;
+            }
+            
+            showNotification('Generating PDF...', 'info');
+            
+            // Use html2canvas to capture the chart container
+            html2canvas(document.querySelector('.chart-container')).then(canvas => {
+                const imgData = canvas.toDataURL('image/png');
+                const pdf = new jspdf.jsPDF('landscape');
+                const imgProps = pdf.getImageProperties(imgData);
+                const pdfWidth = pdf.internal.pageSize.getWidth();
+                const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+                
+                pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+                pdf.save('chart.pdf');
+                showNotification('PDF downloaded successfully!');
+            });
+        }
+
+        function generateIframe() {
+            if (!currentChart) {
+                showNotification('No chart to export!', 'error');
+                return;
+            }
+
+            const canvas = document.getElementById('chart');
+            const dataURL = canvas.toDataURL('image/png');
+            const title = document.getElementById('chartTitle').value || 'Data Visualization';
+            
+            const iframeHTML = `<!DOCTYPE html>
+<html>
+<head>
+    <title>${title}</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #f8fafc; }
+        .chart-container { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        img { max-width: 100%; height: auto; }
+        h1 { color: #4f46e5; margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <div class="chart-container">
+        <h1>${title}</h1>
+        <img src="${dataURL}" alt="${title}" />
+        <p style="color: #6b7280; font-size: 12px; margin-top: 15px;">Generated by DataViz Pro</p>
+    </div>
+</body>
+</html>`;
+
+            const encodedHTML = btoa(unescape(encodeURIComponent(iframeHTML)));
+            const iframeCode = `<iframe src="data:text/html;base64,${encodedHTML}" width="100%" height="600" frameborder="0"></iframe>`;
+            
+            document.getElementById('iframeCode').value = iframeCode;
+            document.getElementById('embedCode').style.display = 'block';
+            showNotification('Embed code generated!');
+        }
+
+        function shareChart() {
+            if (!currentChart) {
+                showNotification('No chart to export!', 'error');
+                return;
+            }
+
+            const canvas = document.getElementById('chart');
+            canvas.toBlob(function(blob) {
+                if (navigator.share) {
+                    const file = new File([blob], 'chart.png', { type: 'image/png' });
+                    navigator.share({
+                        title: 'Data Visualization',
+                        text: 'Check out this chart I created!',
+                        files: [file]
+                    }).then(() => {
+                        showNotification('Chart shared successfully!');
+                    }).catch(() => {
+                        fallbackShare(canvas);
+                    });
+                } else {
+                    fallbackShare(canvas);
+                }
+            });
+        }
+
+        function fallbackShare(canvas) {
+            const dataURL = canvas.toDataURL('image/png');
+            const shareData = {
+                title: 'Data Visualization',
+                text: 'Check out this chart I created with DataViz Pro!',
+                url: window.location.href
+            };
+
+            if (navigator.share) {
+                navigator.share(shareData);
+            } else {
+                // Copy to clipboard
+                navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`).then(() => {
+                    showNotification('Share link copied to clipboard!');
+                });
+            }
+        }
+        
+        function generateShareLink() {
+            if (!parsedData || parsedData.length === 0) {
+                showNotification('No data to share!', 'warning');
+                return;
+            }
+            
+            // Create a unique token for this data
+            shareToken = 'dv_' + Math.random().toString(36).substr(2, 9);
+            
+            // Store data in localStorage
+            localStorage.setItem('shared_chart_' + shareToken, JSON.stringify({
+                data: document.getElementById('dataInput').value,
+                chartType: document.getElementById('chartType').value,
+                xAxis: document.getElementById('xAxis').value,
+                yAxis: Array.from(document.getElementById('yAxis').selectedOptions).map(o => o.value),
+                title: document.getElementById('chartTitle').value
+            }));
+            
+            // Generate shareable link
+            const shareLink = `${window.location.origin}${window.location.pathname}?share=${shareToken}`;
+            document.getElementById('shareLink').value = shareLink;
+            showNotification('Shareable link generated!');
+        }
+        
+        function copyShareLink() {
+            const shareLink = document.getElementById('shareLink').value;
+            if (!shareLink) {
+                showNotification('Generate a share link first!', 'warning');
+                return;
+            }
+            
+            navigator.clipboard.writeText(shareLink).then(() => {
+                showNotification('Link copied to clipboard!');
+            });
+        }
+        
+        function checkUrlForSharedData() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const shareToken = urlParams.get('share');
+            
+            if (shareToken) {
+                const sharedData = localStorage.getItem('shared_chart_' + shareToken);
+                if (sharedData) {
+                    const data = JSON.parse(sharedData);
+                    
+                    // Load shared data
+                    document.getElementById('dataInput').value = data.data;
+                    parseData();
+                    
+                    // Set chart options after a delay to allow data parsing
+                    setTimeout(() => {
+                        document.getElementById('chartType').value = data.chartType;
+                        document.getElementById('xAxis').value = data.xAxis;
+                        
+                        // Select y-axis columns
+                        Array.from(document.getElementById('yAxis').options).forEach(option => {
+                            option.selected = data.yAxis.includes(option.value);
+                        });
+                        
+                        document.getElementById('chartTitle').value = data.title;
+                        
+                        // Update the chart
+                        updateChart();
+                        
+                        showNotification('Shared chart loaded successfully!');
+                    }, 500);
+                }
+            }
+        }
+
+        function copyToClipboard() {
+            const codeTextarea = document.getElementById('iframeCode');
+            codeTextarea.select();
+            codeTextarea.setSelectionRange(0, 99999); // For mobile devices
+            
+            navigator.clipboard.writeText(codeTextarea.value).then(() => {
+                showNotification('Embed code copied to clipboard!');
+            }).catch(() => {
+                // Fallback for older browsers
+                document.execCommand('copy');
+                showNotification('Embed code copied to clipboard!');
+            });
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            if (type === 'error') notification.classList.add('error');
+            if (type === 'warning') notification.classList.add('warning');
+            if (type === 'info') notification.classList.add('info');
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideInRight 0.3s ease-out reverse';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+    </script>
+</body>
+</html>
